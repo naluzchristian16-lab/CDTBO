@@ -1,20 +1,14 @@
 import { useMemo, useState } from "react";
 
 /* =========================
-   CAFE POS - FULL WORKING VERSION
-   - Cart system fixed
-   - Inline product selector
-   - Ongoing / Done / Receipts
-   - Full receipt item breakdown
-   - Clean cashier mode
+   CAFE POS - VERCEL SAFE BUILD VERSION
+   - No TS errors
+   - Cart working
+   - Orders + Receipts
+   - Kitchen flow
 ========================= */
 
-const categories = [
-  "Hot Drinks",
-  "Iced Coffee",
-  "Non-Coffee",
-  "Oatside Series",
-];
+const categories = ["Hot Drinks", "Iced Coffee", "Non-Coffee", "Oatside"];
 
 const products = [
   { id: 1, name: "Americano", category: "Hot Drinks", basePrice: 75 },
@@ -23,266 +17,248 @@ const products = [
 ];
 
 const variants: any = {
-  Malaki: { price: 0, multiplier: 1 },
-  "Mas Malaki": { price: 10, multiplier: 1.2 },
+  Malaki: { price: 0 },
+  "Mas Malaki": { price: 10 },
 };
 
 const addons: any = {
-  "Extra Shot": { price: 10, coffeeUsage: 15 },
-};
-
-const initialInventory = {
-  coffee: 5000,
+  "Extra Shot": { price: 10 },
 };
 
 export default function App() {
-  const [activeCategory, setActiveCategory] = useState("Hot Drinks");
+  const [view, setView] = useState<"cashier" | "kitchen" | "admin">("cashier");
 
-  const [cart, setCart] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [view, setView] = useState("ongoing"); // ongoing | done | receipts
+  const [cart, setCart] = useState<any[]>([]);
+  const [category, setCategory] = useState("Hot Drinks");
 
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [selectedVariant, setSelectedVariant] = useState("Malaki");
-  const [selectedAddons, setSelectedAddons] = useState<any[]>([]);
+  const [variant, setVariant] = useState("Malaki");
+  const [addonsSelected, setAddonsSelected] = useState<string[]>([]);
   const [qty, setQty] = useState(1);
 
   const [discount, setDiscount] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [orderType, setOrderType] = useState("dine-in");
 
-  const [inventory, setInventory] = useState(initialInventory);
-  const [toast, setToast] = useState("");
-
-  const filtered = products.filter((p) => p.category === activeCategory);
-
-  const toggleAddon = (addon: string) => {
-    setSelectedAddons((prev) =>
-      prev.includes(addon)
-        ? prev.filter((a) => a !== addon)
-        : [...prev, addon]
-    );
-  };
-
-  const addToCart = () => {
-    if (!selectedProduct) return;
-
-    const newItem = {
-      ...selectedProduct,
-      variant: selectedVariant,
-      addons: selectedAddons,
-      qty,
-    };
-
-    setCart((prev) => [...prev, newItem]);
-
-    setToast("Added to cart ✔");
-    setTimeout(() => setToast(""), 1200);
-
-    setSelectedProduct(null);
-    setSelectedAddons([]);
-    setSelectedVariant("Malaki");
-    setQty(1);
-  };
+  const filtered = products.filter((p) => p.category === category);
 
   const computeItemPrice = (item: any) => {
     const base = item.basePrice;
-    const variantPrice = variants[item.variant]?.price || 0;
+    const v = variants[item.variant]?.price || 0;
 
-    let addonPrice = 0;
+    let addon = 0;
     item.addons?.forEach((a: string) => {
-      addonPrice += addons[a].price;
+      addon += addons[a].price;
     });
 
-    return (base + variantPrice + addonPrice) * item.qty;
+    return (base + v + addon) * item.qty;
   };
 
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, i) => sum + computeItemPrice(i), 0);
   }, [cart]);
 
+  const addToCart = () => {
+    if (!selectedProduct) return;
+
+    setCart((prev) => [
+      ...prev,
+      {
+        ...selectedProduct,
+        variant,
+        addons: addonsSelected,
+        qty,
+      },
+    ]);
+
+    setSelectedProduct(null);
+    setAddonsSelected([]);
+    setQty(1);
+  };
+
   const checkout = () => {
+    if (cart.length === 0) return;
+
     const order = {
       id: Date.now(),
       items: cart,
       total: cartTotal - discount + deliveryFee,
       status: "ongoing",
+      time: new Date().toLocaleTimeString(),
     };
 
-    setOrders((prev) => [...prev, order]);
+    setOrders((prev) => [order, ...prev]);
     setCart([]);
     setDiscount(0);
     setDeliveryFee(0);
-
-    alert("Order sent to ongoing");
   };
 
-  const markDone = (id: number) => {
+  const updateStatus = (id: number, status: string) => {
     setOrders((prev) =>
-      prev.map((o) =>
-        o.id === id ? { ...o, status: "done" } : o
-      )
+      prev.map((o) => (o.id === id ? { ...o, status } : o))
     );
   };
 
-  const filteredOrders = orders.filter((o) => o.status === view);
+  const ongoing = orders.filter((o) => o.status !== "done");
 
   return (
-    <div style={styles.container}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
       {/* LEFT */}
-      <div style={styles.sidebar}>
-        <h3>CAFE POS</h3>
+      <div style={{ width: 200, padding: 10, borderRight: "1px solid #ddd" }}>
+        <h3>POS</h3>
 
-        <button onClick={() => setView("ongoing")}>Ongoing</button>
-        <button onClick={() => setView("done")}>Done</button>
-        <button onClick={() => setView("receipts")}>Receipts</button>
+        <button onClick={() => setView("cashier")}>Cashier</button>
+        <button onClick={() => setView("kitchen")}>Kitchen</button>
+        <button onClick={() => setView("admin")}>Admin</button>
 
         <hr />
 
         {categories.map((c) => (
-          <button key={c} onClick={() => setActiveCategory(c)} style={styles.btn}>
+          <button key={c} onClick={() => setCategory(c)}>
             {c}
           </button>
         ))}
-
-        <hr />
-        <p>Inventory: {inventory.coffee}ml</p>
       </div>
 
-      {/* PRODUCTS */}
-      <div style={styles.products}>
-        {filtered.map((p) => (
-          <div key={p.id} style={styles.card}>
-            <b>{p.name}</b>
-            <p>₱{p.basePrice}</p>
+      {/* CASHIER */}
+      {view === "cashier" && (
+        <>
+          <div style={{ flex: 1, padding: 10 }}>
+            <h3>Products</h3>
 
-            <button
-              onClick={() => {
-                setSelectedProduct(p);
-                setSelectedVariant("Malaki");
-                setSelectedAddons([]);
-                setQty(1);
-              }}
-            >
-              Select
-            </button>
+            {filtered.map((p) => (
+              <div key={p.id} style={{ marginBottom: 10 }}>
+                {p.name} ₱{p.basePrice}
+                <button onClick={() => setSelectedProduct(p)}>
+                  Select
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* RIGHT */}
-      <div style={styles.selector}>
+          <div style={{ width: 300, padding: 10, borderLeft: "1px solid #ddd" }}>
+            <h3>Cart</h3>
 
-        {toast && <div style={styles.toast}>{toast}</div>}
+            {cart.length === 0 && <p>No items</p>}
 
-        <h3>{view.toUpperCase()}</h3>
-
-        {/* ORDERS / RECEIPTS */}
-        {filteredOrders.map((o) => (
-          <div key={o.id} style={styles.orderBox}>
-            <p><b>Order #{o.id}</b></p>
-
-            {/* ITEM BREAKDOWN */}
-            {o.items.map((i: any, idx: number) => (
-              <div key={idx} style={{ fontSize: 12, marginLeft: 10 }}>
-                {i.name} ({i.variant}) x{i.qty}
+            {cart.map((i, idx) => (
+              <div key={idx}>
+                {i.name} ({i.variant}) x{i.qty} = ₱{computeItemPrice(i)}
               </div>
             ))}
 
-            <p><b>Total: ₱{o.total}</b></p>
+            <hr />
 
-            {o.status === "ongoing" && (
-              <button onClick={() => markDone(o.id)}>
+            <p><b>Total: ₱{cartTotal}</b></p>
+
+            <select onChange={(e) => setOrderType(e.target.value)}>
+              <option>dine-in</option>
+              <option>takeout</option>
+              <option>delivery</option>
+            </select>
+
+            <input
+              placeholder="Discount"
+              onChange={(e) => setDiscount(Number(e.target.value))}
+            />
+
+            {orderType === "delivery" && (
+              <input
+                placeholder="Delivery Fee"
+                onChange={(e) => setDeliveryFee(Number(e.target.value))}
+              />
+            )}
+
+            <button onClick={checkout}>Checkout</button>
+          </div>
+        </>
+      )}
+
+      {/* KITCHEN */}
+      {view === "kitchen" && (
+        <div style={{ flex: 1, padding: 10 }}>
+          <h3>Kitchen</h3>
+
+          {ongoing.map((o) => (
+            <div key={o.id} style={{ border: "1px solid #ccc", marginBottom: 10 }}>
+              <p><b>Order #{o.id}</b> - {o.status}</p>
+
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>
+                  {i.name} ({i.variant}) x{i.qty}
+                </div>
+              ))}
+
+              <button onClick={() => updateStatus(o.id, "done")}>
                 Mark Done
               </button>
-            )}
-          </div>
-        ))}
-
-        <hr />
-
-        {/* CART */}
-        <h4>Cart ({cart.length})</h4>
-
-        {cart.length === 0 && <p>No items yet</p>}
-
-        {cart.map((i, idx) => (
-          <div key={idx}>
-            {i.name} ({i.variant}) x{i.qty} = ₱{computeItemPrice(i)}
-          </div>
-        ))}
-
-        <hr />
-
-        <p><b>Total: ₱{cartTotal}</b></p>
-
-        <select onChange={(e) => setOrderType(e.target.value)}>
-          <option>dine-in</option>
-          <option>takeout</option>
-          <option>delivery</option>
-        </select>
-
-        <input placeholder="Discount" onChange={(e) => setDiscount(Number(e.target.value))} />
-
-        {orderType === "delivery" && (
-          <input placeholder="Delivery Fee" onChange={(e) => setDeliveryFee(Number(e.target.value))} />
-        )}
-
-        <button onClick={checkout} style={styles.checkout}>
-          CHECKOUT
-        </button>
-
-        {/* PRODUCT SELECTOR */}
-        {selectedProduct && (
-          <div style={styles.selectorBox}>
-            <h4>{selectedProduct.name}</h4>
-
-            <p>Variant</p>
-            {Object.keys(variants).map((v) => (
-              <button key={v} onClick={() => setSelectedVariant(v)}>
-                {v}
-              </button>
-            ))}
-
-            <p>Add-ons</p>
-            {Object.keys(addons).map((a) => (
-              <label key={a}>
-                <input
-                  type="checkbox"
-                  checked={selectedAddons.includes(a)}
-                  onChange={() => toggleAddon(a)}
-                />
-                {a}
-              </label>
-            ))}
-
-            <div>
-              <button onClick={() => setQty(qty - 1)}>-</button>
-              {qty}
-              <button onClick={() => setQty(qty + 1)}>+</button>
             </div>
+          ))}
+        </div>
+      )}
 
-            <button onClick={addToCart} style={styles.checkout}>
-              Add to Cart
+      {/* ADMIN */}
+      {view === "admin" && (
+        <div style={{ flex: 1, padding: 10 }}>
+          <h3>Receipts</h3>
+
+          {orders.map((o) => (
+            <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10 }}>
+              <p><b>Receipt #{o.id}</b></p>
+              <p>Status: {o.status}</p>
+
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>
+                  {i.name} x{i.qty}
+                </div>
+              ))}
+
+              <p>Total: ₱{o.total}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* PRODUCT MODAL */}
+      {selectedProduct && (
+        <div style={{ position: "absolute", right: 20, top: 20, background: "#fff", padding: 10, border: "1px solid #ccc" }}>
+          <h4>{selectedProduct.name}</h4>
+
+          <p>Variant</p>
+          {Object.keys(variants).map((v) => (
+            <button key={v} onClick={() => setVariant(v)}>
+              {v}
             </button>
-          </div>
-        )}
+          ))}
 
-      </div>
+          <p>Add-ons</p>
+          {Object.keys(addons).map((a) => (
+            <label key={a}>
+              <input
+                type="checkbox"
+                onChange={() =>
+                  setAddonsSelected((prev) =>
+                    prev.includes(a)
+                      ? prev.filter((x) => x !== a)
+                      : [...prev, a]
+                  )
+                }
+              />
+              {a}
+            </label>
+          ))}
+
+          <div>
+            <button onClick={() => setQty(qty - 1)}>-</button>
+            {qty}
+            <button onClick={() => setQty(qty + 1)}>+</button>
+          </div>
+
+          <button onClick={addToCart}>Add to Cart</button>
+        </div>
+      )}
     </div>
   );
 }
-
-const styles: any = {
-  container: { display: "flex", height: "100vh", fontFamily: "sans-serif" },
-  sidebar: { width: "18%", padding: 10, borderRight: "1px solid #ddd" },
-  products: { flex: 1, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, padding: 10 },
-  selector: { width: "30%", borderLeft: "1px solid #ddd", padding: 10, background: "#fafafa" },
-  card: { border: "1px solid #ccc", padding: 10 },
-  btn: { margin: 5 },
-  checkout: { width: "100%", padding: 10, background: "green", color: "white" },
-  orderBox: { border: "1px solid #ddd", padding: 10, marginBottom: 10 },
-  toast: { background: "black", color: "white", padding: 8, marginBottom: 10, textAlign: "center" },
-  selectorBox: { marginTop: 10, padding: 10, border: "1px solid #ccc" },
-};
