@@ -6,7 +6,7 @@
   display: "flex",
   justifyContent: "space-between"
 }}>
-  <span>Coffee D Titos POS</span>
+  <span>Coffee D' Titos' POS</span>
   <span>{new Date().toLocaleString()}</span>
 </div>
   
@@ -117,19 +117,32 @@ export default function App() {
   };
 
   /* ================= CHECKOUT ================= */
+  const getOrderNumber = () => {
+  const now = new Date();
+
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const yy = String(now.getFullYear()).slice(-2);
+
+  const count = orders.length + 1;
+
+  return `Order#${mm}${dd}${yy}${String(count).padStart(4, "0")}`;
+};
   const checkout = async () => {
     if (!cart.length) return;
 
     const order = {
-      id: Date.now(),
-      time: new Date().toLocaleTimeString(),
-      items: cart,
-      orderType,
-      deliveryFee,
-      discount,
-      total: cartTotal,
-      status: "ongoing"
-    };
+  id: Date.now(),
+  orderNumber: getOrderNumber(),
+  time: new Date().toLocaleTimeString(),
+  date: new Date().toLocaleDateString(),
+  items: cart,
+  orderType,
+  deliveryFee,
+  discount,
+  total: cartTotal,
+  status: "ongoing"
+};
 
     await fetch("/api/saveOrder", {
       method: "POST",
@@ -282,7 +295,7 @@ export default function App() {
 
           {ongoing.map((o) => (
             <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10 }}>
-              <b>Order #{o.id}</b>
+              <b>{o.orderNumber}</b>
 
               {o.items.map((i: any, idx: number) => (
                 <div key={idx}>
@@ -308,7 +321,7 @@ export default function App() {
 
           {orders.map((o) => (
             <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10 }}>
-              <b>Receipt #{o.id}</b>
+              <b>{o.orderNumber}</b>
               <p>{o.orderType}</p>
 
               {o.items.map((i: any, idx: number) => (
