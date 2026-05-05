@@ -89,13 +89,20 @@ export default function App() {
   const [orders, setOrders] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
   const [category, setCategory] = useState("Hot Drinks");
+  const [search, setSearch] = useState("");
 
   const [orderType, setOrderType] = useState("dine-in");
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [discount, setDiscount] = useState(0);
 
-  const filtered = products.filter((p) => p.category === category);
+  const filtered = products.filter((p) => {
+  const matchCategory = p.category === category;
 
+  const matchSearch =
+    p.name.toLowerCase().includes(search.toLowerCase());
+
+  return matchCategory && matchSearch;
+});
   // 🧠 PRICE ENGINE (FULL SYSTEM)
   const computeItemPrice = (item: any) => {
     const base = Number(item.price);
@@ -227,17 +234,41 @@ export default function App() {
         <hr />
 
         {categories.map((c) => (
-          <button key={c} onClick={() => setCategory(c)}>
-            {c}
-          </button>
-        ))}
-      </div>
-
+  <button
+    key={c}
+    onClick={() => {
+      setCategory(c);
+      setSearch(""); // reset search when switching category
+    }}
+    style={{
+      display: "block",
+      width: "100%",
+      marginBottom: 6,
+      padding: 10,
+      background: category === c ? "#222" : "#eee",
+      color: category === c ? "#fff" : "#000",
+      border: "none",
+      cursor: "pointer"
+    }}
+  >
+    {c}
+  </button>
+))}
       {/* CASHIER */}
       {view === "cashier" && (
         <>
           <div style={{ flex: 1, padding: 10 }}>
             <h3>Products</h3>
+            <input
+              placeholder="Search drink..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                padding: 8,
+                marginBottom: 10,
+                width: "100%"
+              }}
+            />
 
             {filtered.map((p) => (
               <div key={p.id} style={{ marginBottom: 10 }}>
