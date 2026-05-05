@@ -1,13 +1,5 @@
 import { useMemo, useState } from "react";
 
-/* =========================
-   CAFE POS - VERCEL SAFE BUILD VERSION
-   - No TS errors
-   - Cart working
-   - Orders + Receipts
-   - Kitchen flow
-========================= */
-
 const categories = ["Hot Drinks", "Iced Coffee", "Non-Coffee", "Oatside"];
 
 const products = [
@@ -49,7 +41,7 @@ export default function App() {
 
     let addon = 0;
     item.addons?.forEach((a: string) => {
-      addon += addons[a].price;
+      addon += addons[a]?.price || 0;
     });
 
     return (base + v + addon) * item.qty;
@@ -78,47 +70,33 @@ export default function App() {
   };
 
   const checkout = async () => {
-  if (cart.length === 0) return;
-
-  const order = {
-    id: Date.now(),
-    time: new Date().toLocaleTimeString(),
-    items: cart,
-    total: cartTotal,
-    discount,
-    deliveryFee,
-    orderType,
-    status: "ongoing",
-  };
-
-  try {
-    await fetch("/api/saveOrder", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(order),
-    });
-
-    setOrders((prev) => [order, ...prev]);
-    setCart([]);
-    setDiscount(0);
-    setDeliveryFee(0);
-  } catch (err) {
-    console.error("checkout error", err);
-  }
-};
+    if (cart.length === 0) return;
 
     const order = {
       id: Date.now(),
-      items: cart,
-      total: cartTotal - discount + deliveryFee,
-      status: "ongoing",
       time: new Date().toLocaleTimeString(),
+      items: cart,
+      total: cartTotal,
+      discount,
+      deliveryFee,
+      orderType,
+      status: "ongoing",
     };
 
-    setOrders((prev) => [order, ...prev]);
-    setCart([]);
-    setDiscount(0);
-    setDeliveryFee(0);
+    try {
+      await fetch("/api/saveOrder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order),
+      });
+
+      setOrders((prev) => [order, ...prev]);
+      setCart([]);
+      setDiscount(0);
+      setDeliveryFee(0);
+    } catch (err) {
+      console.error("checkout error:", err);
+    }
   };
 
   const updateStatus = (id: number, status: string) => {
@@ -132,7 +110,7 @@ export default function App() {
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
-      {/* LEFT */}
+      {/* SIDEBAR */}
       <div style={{ width: 200, padding: 10, borderRight: "1px solid #ddd" }}>
         <h3>POS</h3>
 
@@ -156,7 +134,7 @@ export default function App() {
             <h3>Products</h3>
 
             {filtered.map((p) => (
-              <div key={p.id} style={{ marginBottom: 10 }}>
+              <div key={p.id}>
                 {p.name} ₱{p.basePrice}
                 <button onClick={() => setSelectedProduct(p)}>
                   Select
@@ -181,19 +159,21 @@ export default function App() {
             <p><b>Total: ₱{cartTotal}</b></p>
 
             <select onChange={(e) => setOrderType(e.target.value)}>
-              <option>dine-in</option>
-              <option>takeout</option>
-              <option>delivery</option>
+              <option value="dine-in">dine-in</option>
+              <option value="takeout">takeout</option>
+              <option value="delivery">delivery</option>
             </select>
 
             <input
               placeholder="Discount"
+              type="number"
               onChange={(e) => setDiscount(Number(e.target.value))}
             />
 
             {orderType === "delivery" && (
               <input
                 placeholder="Delivery Fee"
+                type="number"
                 onChange={(e) => setDeliveryFee(Number(e.target.value))}
               />
             )}
@@ -248,7 +228,7 @@ export default function App() {
         </div>
       )}
 
-      {/* PRODUCT MODAL */}
+      {/* MODAL */}
       {selectedProduct && (
         <div style={{ position: "absolute", right: 20, top: 20, background: "#fff", padding: 10, border: "1px solid #ccc" }}>
           <h4>{selectedProduct.name}</h4>
@@ -278,12 +258,12 @@ export default function App() {
           ))}
 
           <div>
-            <button onClick={() => setQty(qty - 1)}>-</button>
+            <button onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
             {qty}
             <button onClick={() => setQty(qty + 1)}>+</button>
           </div>
 
-          <button onClick={addToCart}>Add to Cart</button>
+          <button onClick={addToCart}>Add</button>
         </div>
       )}
     </div>
