@@ -1,3 +1,15 @@
+<div style={{
+  width: "100%",
+  padding: 10,
+  background: "#111",
+  color: "#fff",
+  display: "flex",
+  justifyContent: "space-between"
+}}>
+  <span>Coffee D Titos POS</span>
+  <span>{new Date().toLocaleString()}</span>
+</div>
+  
 import { useMemo, useState } from "react";
 
 /* ================= CATEGORIES ================= */
@@ -313,6 +325,18 @@ export default function App() {
           ))}
         </div>
       )}
+      <div style={{
+  width: "100%",
+  padding: 8,
+  textAlign: "center",
+  background: "#111",
+  color: "#fff",
+  position: "fixed",
+  bottom: 0,
+  left: 0
+}}>
+  Coffee D Titos • Fast Fresh Coffee Experience
+</div>
     </div>
   );
 }
