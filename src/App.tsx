@@ -147,7 +147,14 @@ export default function App() {
 
       {/* SIDEBAR */}
       <div style={{ width: 220, padding: 10, borderRight: "1px solid #ddd" }}>
-        <h3>POS</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+  <img
+    src="/CFDTLOGO.png"
+    alt="Coffee D Titos"
+    style={{ width: 40, height: 40, borderRadius: "50%" }}
+  />
+  <b>Coffee D Titos</b>
+</div>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
         <button onClick={() => setView("kitchen")}>Kitchen</button>
