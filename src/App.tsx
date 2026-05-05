@@ -236,6 +236,15 @@ const order = {
   status: "ongoing"
 };
 
+    await fetch("/api/updateInventory", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    items: cart
+  })
+});
     await fetch("/api/saveOrder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
