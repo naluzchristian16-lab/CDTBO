@@ -17,16 +17,14 @@ const products = [
   { id: 22, name: "Iced Americano", category: "Iced Coffee", size: "20oz", price: 99, type: "iced" },
   { id: 23, name: "Iced Spanish Latte", category: "Iced Coffee", size: "20oz", price: 99, type: "iced" },
   { id: 24, name: "Iced Mocha", category: "Iced Coffee", size: "20oz", price: 99, type: "iced" },
-  { id: 25, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" }
+  { id: 25, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" },
+
+  { id: 33, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced" },
+  { id: 34, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "20oz", price: 89, type: "iced" }
 ];
 
-const variants: any = {
-  Malaki: { price: 0 },
-  "Mas Malaki": { price: 10 },
-};
-
 const addons: any = {
-  "Extra Shot": { price: 10 },
+  "Extra Shot": { price: 10 }
 };
 
 export default function App() {
@@ -38,69 +36,93 @@ export default function App() {
 
   const filtered = products.filter((p) => p.category === category);
 
-  // 🧠 FIXED PRICE ENGINE
+  // 🧠 PRICE ENGINE (SAFE)
   const computeItemPrice = (item: any) => {
     const base = Number(item.price);
 
-    const v = variants[item.variant]?.price || 0;
+    const addonTotal = (item.addons || []).reduce((sum: number, a: string) => {
+      return sum + (addons[a]?.price || 0);
+    }, 0);
 
-    let addon = 0;
-    item.addons?.forEach((a: string) => {
-      addon += addons[a]?.price || 0;
+    return (base + addonTotal) * item.qty;
+  };
+
+  // ⚡ SMART CART (MERGE ITEMS)
+  const addToCart = (item: any) => {
+    setCart((prev) => {
+      const index = prev.findIndex((p) =>
+        p.id === item.id &&
+        p.size === item.size &&
+        p.variant === item.variant &&
+        JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
+      );
+
+      if (index !== -1) {
+        const updated = [...prev];
+        updated[index].qty += 1;
+        return updated;
+      }
+
+      return [...prev, { ...item, qty: 1 }];
     });
+  };
 
-    return (base + v + addon) * item.qty;
+  // ☕ HOT = 1 TAP
+  const addHot = (p: any) => {
+    addToCart({
+      ...p,
+      size: "12oz",
+      variant: null,
+      addons: []
+    });
+  };
+
+  // 🧊 ICED = SIZE BUTTONS
+  const addIced = (p: any, size: "16oz" | "20oz") => {
+    addToCart({
+      ...p,
+      size,
+      variant: size === "20oz" ? "Mas Malaki" : "Malaki",
+      addons: []
+    });
   };
 
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, i) => sum + computeItemPrice(i), 0);
   }, [cart]);
 
-  // ☕ HOT = INSTANT ADD
-  const addHot = (p: any) => {
-    setCart((prev) => [
-      ...prev,
-      {
-        ...p,
-        qty: 1,
-        variant: null,
-        addons: [],
-      },
-    ]);
-  };
+  const toggleAddon = (index: number, addonName: string) => {
+    setCart((prev) => {
+      const updated = [...prev];
+      const item = updated[index];
 
-  // 🧊 ICED = SELECT SIZE THEN ADD
-  const addIced = (p: any, size: "16oz" | "20oz") => {
-    const price = p.price;
+      if (!item.addons) item.addons = [];
 
-    setCart((prev) => [
-      ...prev,
-      {
-        ...p,
-        size,
-        price,
-        variant: size === "20oz" ? "Mas Malaki" : "Malaki",
-        qty: 1,
-        addons: [],
-      },
-    ]);
+      if (item.addons.includes(addonName)) {
+        item.addons = item.addons.filter((a: string) => a !== addonName);
+      } else {
+        item.addons.push(addonName);
+      }
+
+      return updated;
+    });
   };
 
   const checkout = async () => {
-    if (cart.length === 0) return;
+    if (!cart.length) return;
 
     const order = {
       id: Date.now(),
       time: new Date().toLocaleTimeString(),
       items: cart,
       total: cartTotal,
-      status: "ongoing",
+      status: "ongoing"
     };
 
     await fetch("/api/saveOrder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(order),
+      body: JSON.stringify(order)
     });
 
     setOrders((prev) => [order, ...prev]);
@@ -137,22 +159,14 @@ export default function App() {
               <div key={p.id} style={{ marginBottom: 10 }}>
                 <b>{p.name}</b> ₱{p.price}
 
-                {/* ☕ HOT = ONE TAP */}
                 {p.type === "hot" && (
-                  <button onClick={() => addHot(p)}>
-                    Add
-                  </button>
+                  <button onClick={() => addHot(p)}>Add</button>
                 )}
 
-                {/* 🧊 ICED = SIZE BUTTONS */}
                 {p.type === "iced" && (
                   <div>
-                    <button onClick={() => addIced(p, "16oz")}>
-                      Malaki
-                    </button>
-                    <button onClick={() => addIced(p, "20oz")}>
-                      Mas Malaki
-                    </button>
+                    <button onClick={() => addIced(p, "16oz")}>Malaki</button>
+                    <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
                   </div>
                 )}
               </div>
@@ -167,14 +181,18 @@ export default function App() {
 
             {cart.map((i, idx) => (
               <div key={idx}>
-                {i.name}
-                {i.size ? ` (${i.size})` : ""} x{i.qty}
+                {i.name} {i.size ? `(${i.size})` : ""} x{i.qty}
                 = ₱{computeItemPrice(i)}
+
+                <div>
+                  <button onClick={() => toggleAddon(idx, "Extra Shot")}>
+                    Extra Shot (+₱10)
+                  </button>
+                </div>
               </div>
             ))}
 
             <hr />
-
             <b>Total: ₱{cartTotal}</b>
 
             <button onClick={checkout}>Checkout</button>
