@@ -77,8 +77,35 @@ export default function App() {
     setQty(1);
   };
 
-  const checkout = () => {
-    if (cart.length === 0) return;
+  const checkout = async () => {
+  if (cart.length === 0) return;
+
+  const order = {
+    id: Date.now(),
+    time: new Date().toLocaleTimeString(),
+    items: cart,
+    total: cartTotal,
+    discount,
+    deliveryFee,
+    orderType,
+    status: "ongoing",
+  };
+
+  // 1. send to Google Sheets via Vercel API
+  await fetch("/api/saveOrder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(order),
+  });
+
+  // 2. save locally for UI
+  setOrders((prev) => [order, ...prev]);
+
+  // 3. clear cart
+  setCart([]);
+  setDiscount(0);
+  setDeliveryFee(0);
+};
 
     const order = {
       id: Date.now(),
