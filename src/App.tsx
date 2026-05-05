@@ -3,78 +3,18 @@ import { useMemo, useState } from "react";
 const categories = ["Hot Drinks", "Iced Coffee", "Non-Coffee", "Oatside Series"];
 
 const products = [
-  // ☕ HOT COFFEE (12oz only)
-  { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69, type: "hot" },
-  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot" },
-  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79, type: "hot" },
-  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89, type: "hot" },
-  { id: 5, name: "Hot Dirty Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot" },
-  { id: 6, name: "Hot Strawberry Dirty Matcha", category: "Hot Drinks", size: "12oz", price: 99, type: "hot" },
-  { id: 7, name: "Hot Strawberry Mocha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot" },
-  { id: 8, name: "Hot Strawberry Latte", category: "Hot Drinks", size: "12oz", price: 89, type: "hot" },
-  { id: 9, name: "Hot Matcha Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot" },
-  { id: 10, name: "Hot Strawberry Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot" },
+  { id: 1, name: "Hot Americano", category: "Hot Drinks", price: 69, type: "hot", coffee: true },
+  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", price: 79, type: "hot", coffee: true },
 
-  // 🧊 ICED COFFEE - 16oz (Malaki)
-  { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 89, type: "iced" },
-  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89, type: "iced" },
-  { id: 13, name: "Iced Mocha", category: "Iced Coffee", size: "16oz", price: 89, type: "iced" },
-  { id: 14, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "16oz", price: 99, type: "iced" },
-  { id: 15, name: "Iced Dirty Matcha", category: "Iced Coffee", size: "16oz", price: 99, type: "iced" },
-  { id: 16, name: "Iced Strawberry Dirty Matcha", category: "Iced Coffee", size: "16oz", price: 109, type: "iced" },
-  { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 99, type: "iced" },
-  { id: 18, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "16oz", price: 99, type: "iced" },
-  { id: 19, name: "Iced Matcha Latte", category: "Iced Coffee", size: "16oz", price: 89, type: "iced" },
-  { id: 20, name: "Iced Strawberry Matcha", category: "Iced Coffee", size: "16oz", price: 99, type: "iced" },
-  { id: 21, name: "Iced Blueberry Matcha", category: "Iced Coffee", size: "16oz", price: 99, type: "iced" },
+  { id: 11, name: "Iced Americano", category: "Iced Coffee", price: 89, type: "iced", coffee: true },
+  { id: 12, name: "Iced Mocha", category: "Iced Coffee", price: 89, type: "iced", coffee: true },
 
-  // 🧊 ICED COFFEE - 20oz (Mas Malaki)
-  { id: 22, name: "Iced Americano", category: "Iced Coffee", size: "20oz", price: 99, type: "iced" },
-  { id: 23, name: "Iced Spanish Latte", category: "Iced Coffee", size: "20oz", price: 99, type: "iced" },
-  { id: 24, name: "Iced Mocha", category: "Iced Coffee", size: "20oz", price: 99, type: "iced" },
-  { id: 25, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" },
-  { id: 26, name: "Iced Dirty Matcha", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" },
-  { id: 27, name: "Iced Strawberry Dirty Matcha", category: "Iced Coffee", size: "20oz", price: 119, type: "iced" },
-  { id: 28, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" },
-  { id: 29, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" },
-  { id: 30, name: "Iced Matcha Latte", category: "Iced Coffee", size: "20oz", price: 99, type: "iced" },
-  { id: 31, name: "Iced Strawberry Matcha", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" },
-  { id: 32, name: "Iced Blueberry Matcha", category: "Iced Coffee", size: "20oz", price: 109, type: "iced" },
-
-  // 🥛 OATSIDE SERIES - 16oz
-  { id: 33, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 99, type: "iced" },
-  { id: 34, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 99, type: "iced" },
-  { id: 35, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 109, type: "iced" },
-  { id: 36, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 119, type: "iced" },
-  { id: 37, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 109, type: "iced" },
-  { id: 38, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "16oz", price: 109, type: "iced" },
-  { id: 39, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "16oz", price: 109, type: "iced" },
-
-  // 🥛 OATSIDE SERIES - 20oz
-  { id: 40, name: "Oatside Spanish Latte", category: "Oatside Series", size: "20oz", price: 109, type: "iced" },
-  { id: 41, name: "Oatside Matcha Latte", category: "Oatside Series", size: "20oz", price: 109, type: "iced" },
-  { id: 42, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "20oz", price: 119, type: "iced" },
-  { id: 43, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "20oz", price: 129, type: "iced" },
-  { id: 44, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "20oz", price: 119, type: "iced" },
-  { id: 45, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "20oz", price: 119, type: "iced" },
-  { id: 46, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "20oz", price: 119, type: "iced" },
-
-  // 🍓 NON-COFFEE - 16oz
-  { id: 47, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced" },
-  { id: 48, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced" },
-  { id: 49, name: "Strawberry Choco", category: "Non-Coffee", size: "16oz", price: 78, type: "iced" },
-  { id: 50, name: "Green Apple Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced" },
-  { id: 51, name: "Blueberry Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced" },
-  { id: 52, name: "Iced Blueberry Matcha", category: "Non-Coffee", size: "16oz", price: 99, type: "iced" },
-
-  // 🍓 NON-COFFEE - 20oz
-  { id: 53, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "20oz", price: 89, type: "iced" },
-  { id: 54, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "20oz", price: 89, type: "iced" },
-  { id: 55, name: "Strawberry Choco", category: "Non-Coffee", size: "20oz", price: 89, type: "iced" },
-  { id: 56, name: "Green Apple Soda", category: "Non-Coffee", size: "20oz", price: 79, type: "iced" },
-  { id: 57, name: "Blueberry Soda", category: "Non-Coffee", size: "20oz", price: 79, type: "iced" },
-  { id: 58, name: "Iced Blueberry Matcha", category: "Non-Coffee", size: "20oz", price: 109, type: "iced" }
+  { id: 33, name: "Strawberry Milk Drink", category: "Non-Coffee", price: 79, type: "iced", coffee: false }
 ];
+
+const addons = {
+  "Extra Shot": 10
+};
 
 export default function App() {
   const [view, setView] = useState<"cashier" | "kitchen" | "admin">("cashier");
@@ -83,19 +23,38 @@ export default function App() {
   const [cart, setCart] = useState<any[]>([]);
   const [category, setCategory] = useState("Hot Drinks");
 
+  const [orderType, setOrderType] = useState("dine-in");
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [discount, setDiscount] = useState(0);
+
   const filtered = products.filter((p) => p.category === category);
 
-  // 🧠 PRICE ENGINE
+  // 🧠 PRICE ENGINE (FULL SYSTEM)
   const computeItemPrice = (item: any) => {
-    return Number(item.price) * item.qty;
+    const base = Number(item.price);
+
+    const sizeAdd = item.size === "20oz" ? 10 : 0;
+
+    const addonTotal = (item.addons || []).reduce((sum: number, a: string) => {
+      return sum + (addons[a as keyof typeof addons] || 0);
+    }, 0);
+
+    return (base + sizeAdd + addonTotal) * item.qty;
   };
+
+  const cartTotal = useMemo(() => {
+    const subtotal = cart.reduce((sum, i) => sum + computeItemPrice(i), 0);
+    return subtotal + Number(deliveryFee) - Number(discount);
+  }, [cart, deliveryFee, discount]);
 
   // ⚡ SMART ADD TO CART
   const addToCart = (item: any) => {
     setCart((prev) => {
-      const index = prev.findIndex((p) =>
-        p.id === item.id &&
-        p.size === item.size
+      const index = prev.findIndex(
+        (p) =>
+          p.id === item.id &&
+          p.size === item.size &&
+          JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
       );
 
       if (index !== -1) {
@@ -104,23 +63,47 @@ export default function App() {
         return updated;
       }
 
-      return [...prev, { ...item, qty: 1 }];
+      return [...prev, { ...item, qty: 1, addons: item.addons || [] }];
     });
   };
 
+  // ☕ HOT (instant)
   const addHot = (p: any) => {
-    addToCart({ ...p, size: "12oz" });
+    addToCart({
+      ...p,
+      size: "12oz",
+      addons: []
+    });
   };
 
+  // 🧊 ICED
   const addIced = (p: any, size: "16oz" | "20oz") => {
-    addToCart({ ...p, size });
+    addToCart({
+      ...p,
+      size,
+      addons: []
+    });
   };
 
-  const cartTotal = useMemo(() => {
-    return cart.reduce((sum, i) => sum + computeItemPrice(i), 0);
-  }, [cart]);
+  // ➕ ADD EXTRA SHOT
+  const toggleAddon = (index: number) => {
+    setCart((prev) => {
+      const updated = [...prev];
+      const item = updated[index];
 
-  // 🗑️ REMOVE FROM CART
+      if (!item.addons) item.addons = [];
+
+      if (item.addons.includes("Extra Shot")) {
+        item.addons = item.addons.filter((a: string) => a !== "Extra Shot");
+      } else {
+        item.addons.push("Extra Shot");
+      }
+
+      return updated;
+    });
+  };
+
+  // 🗑 REMOVE ITEM
   const removeFromCart = (index: number) => {
     setCart((prev) => prev.filter((_, i) => i !== index));
   };
@@ -133,6 +116,9 @@ export default function App() {
       id: Date.now(),
       time: new Date().toLocaleTimeString(),
       items: cart,
+      orderType,
+      deliveryFee,
+      discount,
       total: cartTotal,
       status: "ongoing"
     };
@@ -145,9 +131,11 @@ export default function App() {
 
     setOrders((prev) => [order, ...prev]);
     setCart([]);
+    setDiscount(0);
+    setDeliveryFee(0);
   };
 
-  // 🍳 MARK AS DONE
+  // 🍳 DONE
   const markDone = (id: number) => {
     setOrders((prev) =>
       prev.map((o) =>
@@ -167,6 +155,7 @@ export default function App() {
 
         <button onClick={() => setView("cashier")}>Cashier</button>
         <button onClick={() => setView("kitchen")}>Kitchen</button>
+        <button onClick={() => setView("admin")}>Admin</button>
 
         <hr />
 
@@ -184,8 +173,8 @@ export default function App() {
             <h3>Products</h3>
 
             {filtered.map((p) => (
-              <div key={p.id}>
-                {p.name} ₱{p.price}
+              <div key={p.id} style={{ marginBottom: 10 }}>
+                <b>{p.name}</b> ₱{p.price}
 
                 {p.type === "hot" && (
                   <button onClick={() => addHot(p)}>Add</button>
@@ -193,8 +182,8 @@ export default function App() {
 
                 {p.type === "iced" && (
                   <>
-                    <button onClick={() => addIced(p, "16oz")}>16oz</button>
-                    <button onClick={() => addIced(p, "20oz")}>20oz</button>
+                    <button onClick={() => addIced(p, "16oz")}>Malaki</button>
+                    <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
                   </>
                 )}
               </div>
@@ -202,27 +191,50 @@ export default function App() {
           </div>
 
           {/* CART */}
-          <div style={{ width: 320, padding: 10, borderLeft: "1px solid #ddd" }}>
+          <div style={{ width: 340, padding: 10, borderLeft: "1px solid #ddd" }}>
             <h3>Cart</h3>
 
-            {cart.length === 0 && <p>No items</p>}
-
             {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 8 }}>
+              <div key={idx} style={{ marginBottom: 10 }}>
                 <div>
                   {i.name} {i.size ? `(${i.size})` : ""} x{i.qty}
                   = ₱{computeItemPrice(i)}
                 </div>
 
-                {/* 🗑️ REMOVE BUTTON */}
-                <button onClick={() => removeFromCart(idx)}>
-                  Remove
-                </button>
+                {i.coffee && (
+                  <button onClick={() => toggleAddon(idx)}>
+                    Extra Shot (+₱10)
+                  </button>
+                )}
+
+                <button onClick={() => removeFromCart(idx)}>Remove</button>
               </div>
             ))}
 
             <hr />
-            <b>Total: ₱{cartTotal}</b>
+
+            <p><b>Total: ₱{cartTotal}</b></p>
+
+            {/* ORDER TYPE */}
+            <select onChange={(e) => setOrderType(e.target.value)}>
+              <option value="dine-in">Dine In</option>
+              <option value="takeout">Take Out</option>
+              <option value="delivery">Delivery</option>
+            </select>
+
+            {orderType === "delivery" && (
+              <input
+                type="number"
+                placeholder="Delivery Fee"
+                onChange={(e) => setDeliveryFee(Number(e.target.value))}
+              />
+            )}
+
+            <input
+              type="number"
+              placeholder="Discount"
+              onChange={(e) => setDiscount(Number(e.target.value))}
+            />
 
             <button onClick={checkout}>Checkout</button>
           </div>
@@ -241,15 +253,42 @@ export default function App() {
               {o.items.map((i: any, idx: number) => (
                 <div key={idx}>
                   {i.name} {i.size ? `(${i.size})` : ""} x{i.qty}
+                  {i.addons?.length ? ` + ${i.addons.join(", ")}` : ""}
                 </div>
               ))}
 
               <p>Total: ₱{o.total}</p>
 
-              {/* 🍳 DONE BUTTON */}
               <button onClick={() => markDone(o.id)}>
                 Mark as Done
               </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ADMIN */}
+      {view === "admin" && (
+        <div style={{ flex: 1, padding: 10 }}>
+          <h3>Receipts</h3>
+
+          {orders.map((o) => (
+            <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10 }}>
+              <p><b>Receipt #{o.id}</b></p>
+              <p>{o.orderType}</p>
+
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>
+                  {i.name} {i.size ? `(${i.size})` : ""} x{i.qty}
+                  {i.addons?.length ? ` + ${i.addons.join(", ")}` : ""}
+                </div>
+              ))}
+
+              <p>Delivery: ₱{o.deliveryFee}</p>
+              <p>Discount: ₱{o.discount}</p>
+              <p><b>Total: ₱{o.total}</b></p>
+
+              <button onClick={() => markDone(o.id)}>Mark Done</button>
             </div>
           ))}
         </div>
