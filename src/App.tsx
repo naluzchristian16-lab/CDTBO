@@ -91,20 +91,20 @@ export default function App() {
     status: "ongoing",
   };
 
-  // 1. send to Google Sheets via Vercel API
-  await fetch("/api/saveOrder", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(order),
-  });
+  try {
+    await fetch("/api/saveOrder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(order),
+    });
 
-  // 2. save locally for UI
-  setOrders((prev) => [order, ...prev]);
-
-  // 3. clear cart
-  setCart([]);
-  setDiscount(0);
-  setDeliveryFee(0);
+    setOrders((prev) => [order, ...prev]);
+    setCart([]);
+    setDiscount(0);
+    setDeliveryFee(0);
+  } catch (err) {
+    console.error("checkout error", err);
+  }
 };
 
     const order = {
