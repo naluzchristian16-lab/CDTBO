@@ -42,23 +42,30 @@ export default async function handler(req, res) {
     });
 
     // ORDER ITEMS
-    const rows = body.items.map((i) => [
-      body.id,
-      i.name,
-      i.variant,
-      i.qty,
-      (i.addons || []).join(", "),
-      i.price || 0,
-    ]);
+    const rows = order.items.map((item) => [
+  order.orderNumber,
+  order.date,
+  order.time,
+  order.status,
+  order.orderType,
+  order.deliveryFee,
+  order.discount,
+  item.name,
+  item.size || "",
+  item.qty,
+  item.addons?.join(", ") || "",
+  item.price * item.qty,
+  order.total
+]);
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: "OrderItems!A:F",
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: rows,
-      },
-    });
+await sheets.spreadsheets.values.append({
+  spreadsheetId: process.env.GOOGLE_SHEET_ID,
+  range: "Orders!A:M",
+  valueInputOption: "USER_ENTERED",
+  requestBody: {
+    values: rows
+  }
+});
 
     res.status(200).json({ success: true });
   } catch (err) {
