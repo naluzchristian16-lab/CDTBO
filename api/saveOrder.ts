@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         Number(item.price || 0) * Number(item.qty || 1) + addonTotal;
 
       return [
-        order.id,
+        order.orderNumber || order.id,
         order.date || "",
         order.time || "",
         order.status || "ongoing",
