@@ -34,6 +34,30 @@ const addons: any = {
   "Extra Shot": 10
 };
 
+const getTodayKey = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+};
+
+const getOrderNumber = () => {
+  const now = new Date();
+
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const yy = String(now.getFullYear()).slice(-2);
+
+  const todayKey = getTodayKey();
+
+  // filter today's orders only
+  const todayOrders = orders.filter(
+    (o) => o.dateKey === todayKey
+  );
+
+  const sequence = todayOrders.length + 1;
+
+  return `Order#${mm}${dd}${yy}${String(sequence).padStart(4, "0")}`;
+};
+
 export default function App() {
   const [view, setView] = useState<"cashier" | "kitchen" | "admin">("cashier");
 
@@ -131,11 +155,15 @@ export default function App() {
   const checkout = async () => {
     if (!cart.length) return;
 
-    const order = {
+    const now = new Date();
+const todayKey = getTodayKey();
+
+const order = {
   id: Date.now(),
   orderNumber: getOrderNumber(),
-  time: new Date().toLocaleTimeString(),
-  date: new Date().toLocaleDateString(),
+  dateKey: todayKey, // 👈 IMPORTANT FOR RESET LOGIC
+  time: now.toLocaleTimeString(),
+  date: now.toLocaleDateString(),
   items: cart,
   orderType,
   deliveryFee,
