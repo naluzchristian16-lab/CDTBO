@@ -61,17 +61,15 @@ const addons = { "Extra Shot": 10 };
 
 export default function App() {
   const [view, setView] = useState("cashier");
-  const [orders, setOrders] = useState([]);
-  const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [cart, setCart] = useState<any[]>([]);
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
-
-  const normalizedSearch = search.toLowerCase().trim();
 
   const baseFiltered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
-      p.name.toLowerCase().includes(normalizedSearch)
+      p.name.toLowerCase().includes(search.toLowerCase().trim())
     );
   }, [category, search]);
 
@@ -85,34 +83,33 @@ export default function App() {
       .filter(g => g.items.length > 0);
   }, [baseFiltered]);
 
-  /* ================= ORDER NUMBER ================= */
   const generateOrderNumber = () => {
     const d = new Date();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const yy = String(d.getFullYear()).slice(-2);
-    const counter = String(orders.length + 1).padStart(4, "0");
-    return `${mm}${dd}${yy}${counter}`;
+    return (
+      String(d.getMonth() + 1).padStart(2, "0") +
+      String(d.getDate()).padStart(2, "0") +
+      String(d.getFullYear()).slice(-2) +
+      String(orders.length + 1).padStart(4, "0")
+    );
   };
 
-  /* ================= CART ================= */
   const addToCart = (item: any) => {
-  setCart(prev => {
-    const i = prev.findIndex(p =>
-      p.id === item.id &&
-      p.size === item.size &&
-      JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
-    );
+    setCart(prev => {
+      const i = prev.findIndex(p =>
+        p.id === item.id &&
+        p.size === item.size &&
+        JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
+      );
 
-    if (i !== -1) {
-      const updated = [...prev];
-      updated[i].qty += 1;
-      return updated;
-    }
+      if (i !== -1) {
+        const copy = [...prev];
+        copy[i].qty++;
+        return copy;
+      }
 
-    return [...prev, { ...item, qty: 1, addons: item.addons || [] }];
-  });
-};
+      return [...prev, { ...item, qty: 1, addons: item.addons || [] }];
+    });
+  };
 
   const addHot = (p) => addToCart({ ...p, size: "12oz" });
   const addIced = (p, size) => addToCart({ ...p, size });
@@ -121,8 +118,7 @@ export default function App() {
     setCart(prev => {
       const copy = [...prev];
       const item = copy[idx];
-
-      if (!item.addons) item.addons = [];
+      item.addons = item.addons || [];
 
       if (item.addons.includes("Extra Shot")) {
         item.addons = item.addons.filter(a => a !== "Extra Shot");
@@ -142,16 +138,11 @@ export default function App() {
 
   const cartTotal = cart.reduce((s, i) => s + computeItemPrice(i), 0);
 
-  /* ================= CHECKOUT ================= */
-  const checkout = async () => {
+  const checkout = () => {
     if (!cart.length) return;
-
-    const now = new Date();
 
     const order = {
       orderNumber: generateOrderNumber(),
-      date: now.toLocaleDateString(),
-      time: now.toLocaleTimeString(),
       items: cart,
       total: cartTotal,
       status: "ongoing"
@@ -159,16 +150,6 @@ export default function App() {
 
     setOrders(prev => [order, ...prev]);
     setCart([]);
-
-    try {
-      await fetch("/api/saveOrder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(order)
-      });
-    } catch (e) {
-      console.error(e);
-    }
   };
 
   const markDone = (id) => {
@@ -182,12 +163,11 @@ export default function App() {
   const ongoing = orders.filter(o => o.status === "ongoing");
   const done = orders.filter(o => o.status === "done");
 
-  /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh" }}>
 
       {/* SIDEBAR */}
-      <div style={{ width: 220 }}>
+      <div style={{ width: 220, padding: 10 }}>
         <h3>Coffee D' Titos</h3>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
@@ -207,8 +187,7 @@ export default function App() {
       {view === "cashier" && (
         <div style={{ display: "flex", flex: 1 }}>
 
-          {/* MENU */}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, padding: 10 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} />
 
             {(search ? groupedResults : [{ category, items: baseFiltered }]).map((g, i) => (
@@ -236,162 +215,99 @@ export default function App() {
           </div>
 
           {/* CART */}
-<div style={{ width: 300 }}>
-  <h3>Cart</h3>
+          <div style={{ width: 300, padding: 10 }}>
+            <h3>Cart</h3>
 
-  {cart.map((i, idx) => (
-    <div key={idx} style={{ marginBottom: 12 }}>
+            {cart.map((i, idx) => (
+              <div key={idx} style={{ marginBottom: 10 }}>
+                <b>{i.name}</b> ({i.size})
 
-      <b>{i.name}</b> ({i.size})
+                {i.addons?.length > 0 && (
+                  <div style={{ fontSize: 12, color: "green" }}>
+                    + {i.addons.join(", ")}
+                  </div>
+                )}
 
-      {/* ADDONS DISPLAY (FIXED) */}
-      {i.addons?.length > 0 && (
-        <div style={{ fontSize: 12, color: "green" }}>
-          + {i.addons.join(", ")}
+                <div>
+                  ₱{i.price} x {i.qty} = ₱{computeItemPrice(i)}
+                </div>
+
+                <button onClick={() => {
+                  setCart(prev => {
+                    const c = [...prev];
+                    if (c[idx].qty > 1) c[idx].qty--;
+                    else c.splice(idx, 1);
+                    return c;
+                  });
+                }}>-</button>
+
+                <span style={{ margin: "0 8px" }}>{i.qty}</span>
+
+                <button onClick={() => {
+                  setCart(prev => {
+                    const c = [...prev];
+                    c[idx].qty++;
+                    return c;
+                  });
+                }}>+</button>
+
+                {i.coffee && (
+                  <button onClick={() => toggleExtraShot(idx)}>
+                    Extra Shot
+                  </button>
+                )}
+              </div>
+            ))}
+
+            <h4>Total: ₱{cartTotal}</h4>
+            <button onClick={checkout}>Checkout</button>
+          </div>
         </div>
       )}
 
-      <div>
-        ₱{i.price} x {i.qty} = ₱{computeItemPrice(i)}
-      </div>
-
-      {/* QTY CONTROLS */}
-      <button
-        onClick={() => {
-          setCart(prev => {
-            const c = [...prev];
-            if (c[idx].qty > 1) c[idx].qty--;
-            else c.splice(idx, 1);
-            return c;
-          });
-        }}
-      >
-        -
-      </button>
-
-      <span style={{ margin: "0 8px" }}>{i.qty}</span>
-
-      <button
-        onClick={() => {
-          setCart(prev => {
-            const c = [...prev];
-            c[idx].qty++;
-            return c;
-          });
-        }}
-      >
-        +
-      </button>
-
-      {/* EXTRA SHOT */}
-      {i.coffee && (
-        <button onClick={() => toggleExtraShot(idx)} style={{ marginLeft: 8 }}>
-          Extra Shot
-        </button>
-      )}
-
-    </div>
-  ))}
-
-  <h4>Total: ₱{cartTotal}</h4>
-  <button onClick={checkout}>Checkout</button>
-</div>
-          
       {/* KITCHEN */}
       {view === "kitchen" && (
-  <div style={{
-    flex: 1,
-    padding: 20,
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center"
-  }}>
-    <h2>Kitchen Orders</h2>
+        <div style={{ flex: 1, padding: 20, textAlign: "center" }}>
+          <h2>Kitchen</h2>
 
-    {ongoing.map(o => (
-      <div
-        key={o.orderNumber}
-        style={{
-          width: "80%",
-          border: "1px solid #ddd",
-          borderRadius: 8,
-          padding: 15,
-          marginBottom: 15
-        }}
-      >
-        <b style={{ fontSize: 18 }}>Order #{o.orderNumber}</b>
+          {ongoing.map(o => (
+            <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
+              <b>Order #{o.orderNumber}</b>
 
-        <div style={{ marginTop: 10 }}>
-          {o.items.map((i, idx) => (
-            <div key={idx} style={{ marginBottom: 6 }}>
-              <div>
-                🍹 {i.name} ({i.size}) x{i.qty}
-              </div>
-
-              {i.addons?.length > 0 && (
-                <div style={{ fontSize: 12, color: "green" }}>
-                  + {i.addons.join(", ")}
+              {o.items.map((i, idx) => (
+                <div key={idx}>
+                  {i.name} ({i.size}) x{i.qty}
+                  {i.addons?.length > 0 && (
+                    <div style={{ fontSize: 12, color: "green" }}>
+                      + {i.addons.join(", ")}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
+
+              <h3>₱{o.total}</h3>
+
+              <button onClick={() => markDone(o.orderNumber)}>
+                Done
+              </button>
             </div>
           ))}
         </div>
-
-        <h3 style={{ marginTop: 10 }}>₱{o.total}</h3>
-
-        <button onClick={() => markDone(o.orderNumber)}>
-          Mark as Done
-        </button>
-      </div>
-    ))}
-  </div>
-)}
+      )}
 
       {/* ADMIN */}
       {view === "admin" && (
-  <div style={{
-    flex: 1,
-    padding: 20,
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center"
-  }}>
-    <h2>Completed Orders</h2>
+        <div style={{ flex: 1, padding: 20, textAlign: "center" }}>
+          <h2>Completed Orders</h2>
 
-    {done.map(o => (
-      <div
-        key={o.orderNumber}
-        style={{
-          width: "80%",
-          border: "1px solid #ddd",
-          borderRadius: 8,
-          padding: 15,
-          marginBottom: 15
-        }}
-      >
-        <b style={{ fontSize: 18 }}>Order #{o.orderNumber}</b>
-
-        <div style={{ marginTop: 10 }}>
-          {o.items.map((i, idx) => (
-            <div key={idx} style={{ marginBottom: 6 }}>
-              {i.name} ({i.size}) x{i.qty}
-
-              {i.addons?.length > 0 && (
-                <div style={{ fontSize: 12, color: "green" }}>
-                  + {i.addons.join(", ")}
-                </div>
-              )}
+          {done.map(o => (
+            <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
+              <b>Order #{o.orderNumber}</b>
+              <h3>₱{o.total}</h3>
             </div>
           ))}
         </div>
-
-        <h3 style={{ marginTop: 10 }}>₱{o.total}</h3>
-      </div>
-    ))}
-  </div>
-)}
+      )}
 
     </div>
   );
