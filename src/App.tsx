@@ -62,7 +62,6 @@ const products = [
   { id: 38, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: false },
   { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true },
 ];
-];
 
 /* ================= ADD ONS ================= */
 const addons: any = {
