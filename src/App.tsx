@@ -29,32 +29,7 @@ const products = [
   { id: 14, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
   { id: 15, name: "Iced Ube Macchiato", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
   { id: 16, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
-
-  { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 19, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 20, name: "Mixed Berries Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 21, name: "Strawberry Choco", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 22, name: "Green Apple Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
-  { id: 23, name: "Blueberry Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
-  { id: 24, name: "Lychee Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
-
-  { id: 25, name: "Matcha Latte", category: "Matcha Collection", size: "16oz", price: 104, type: "iced", coffee: false },
-  { id: 26, name: "Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 27, name: "Strawberry Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 28, name: "Blueberry Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 29, name: "Mixed Berries Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 30, name: "Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 124, type: "iced", coffee: true },
-
-  { id: 31, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
-  { id: 32, name: "Oatside Mocha", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
-  { id: 33, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 34, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: false },
-  { id: 35, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 36, name: "Oatside Strawberry Mocha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 37, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 38, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true }
+  { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true }
 ];
 
 /* ================= ADDONS ================= */
@@ -86,17 +61,14 @@ export default function App() {
       .filter(g => g.items.length > 0);
   }, [baseFiltered]);
 
-  /* ================= CART SAFE FIX ================= */
+  /* ================= CART ================= */
   const addToCart = (item: any) => {
     setCart(prev => {
-      const index = prev.findIndex(p => p.id === item.id && p.size === item.size);
+      const i = prev.findIndex(p => p.id === item.id && p.size === item.size);
 
-      if (index !== -1) {
+      if (i !== -1) {
         const updated = [...prev];
-        updated[index] = {
-          ...updated[index],
-          qty: updated[index].qty + 1
-        };
+        updated[i].qty += 1;
         return updated;
       }
 
@@ -107,17 +79,7 @@ export default function App() {
   const addHot = (p: any) => addToCart({ ...p, size: "12oz" });
   const addIced = (p: any, size: "16oz" | "20oz") => addToCart({ ...p, size });
 
-  const computeItemPrice = (item: any) => {
-    const base = item.price * item.qty;
-    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
-    return base + addon;
-  };
-
-  const cartTotal = useMemo(
-    () => cart.reduce((sum, i) => sum + computeItemPrice(i), 0),
-    [cart]
-  );
-
+  /* ================= EXTRA SHOT TOGGLE ================= */
   const toggleExtraShot = (idx: number) => {
     setCart(prev => {
       const updated = [...prev];
@@ -135,6 +97,19 @@ export default function App() {
     });
   };
 
+  /* ================= PRICE ================= */
+  const computeItemPrice = (item: any) => {
+    const base = item.price * item.qty;
+    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
+    return base + addon;
+  };
+
+  const cartTotal = useMemo(
+    () => cart.reduce((s, i) => s + computeItemPrice(i), 0),
+    [cart]
+  );
+
+  /* ================= CHECKOUT ================= */
   const checkout = () => {
     if (!cart.length) return;
 
@@ -162,6 +137,7 @@ export default function App() {
   const ongoing = orders.filter(o => o.status === "ongoing");
   const done = orders.filter(o => o.status === "done");
 
+  /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
@@ -186,6 +162,7 @@ export default function App() {
       {view === "cashier" && (
         <div style={{ display: "flex", flex: 1 }}>
 
+          {/* MENU */}
           <div style={{ flex: 1, padding: 10 }}>
             <input
               value={search}
@@ -218,46 +195,49 @@ export default function App() {
           </div>
 
           {/* CART */}
-          <div style={{ width: 300, padding: 10 }}>
+          <div style={{ width: 320, padding: 10 }}>
 
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 10 }}>
+              <div key={idx} style={{ marginBottom: 12 }}>
+
                 <b>
-                  {i.name} {i.size ? `(${i.size})` : ""}
+                  {i.name} {i.size && `(${i.size})`}
                 </b>
+
+                {/* SHOW ADDONS HERE */}
+                {i.addons?.length > 0 && (
+                  <div style={{ fontSize: 12, color: "green" }}>
+                    + {i.addons.join(", ")}
+                  </div>
+                )}
 
                 <div>
                   ₱{i.price} × {i.qty} = ₱{computeItemPrice(i)}
                 </div>
 
                 <div style={{ display: "flex", gap: 5 }}>
-                  <button onClick={() => {
-                    setCart(prev => {
-                      const u = [...prev];
-                      if (u[idx].qty > 1) u[idx].qty--;
-                      else u.splice(idx, 1);
-                      return u;
-                    });
-                  }}>-</button>
+                  <button onClick={() => setCart(prev => {
+                    const u = [...prev];
+                    if (u[idx].qty > 1) u[idx].qty--;
+                    else u.splice(idx, 1);
+                    return u;
+                  })}>-</button>
 
                   <span>{i.qty}</span>
 
-                  <button onClick={() => {
-                    setCart(prev => {
-                      const u = [...prev];
-                      u[idx].qty++;
-                      return u;
-                    });
-                  }}>+</button>
+                  <button onClick={() => setCart(prev => {
+                    const u = [...prev];
+                    u[idx].qty++;
+                    return u;
+                  })}>+</button>
                 </div>
 
-                {i.coffee && (
-                  <button onClick={() => toggleExtraShot(idx)}>
-                    Extra Shot (+₱10)
-                  </button>
-                )}
+                <button onClick={() => toggleExtraShot(idx)}>
+                  Extra Shot (+₱10)
+                </button>
+
               </div>
             ))}
 
@@ -271,15 +251,22 @@ export default function App() {
       {/* KITCHEN */}
       {view === "kitchen" && (
         <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen</h2>
+          <h2>Kitchen Orders</h2>
 
           {ongoing.map(o => (
-            <div key={o.id}>
+            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
               <b>Order #{o.id}</b>
 
               {o.items.map((i: any, idx: number) => (
                 <div key={idx}>
                   {i.name} {i.size} x{i.qty}
+
+                  {/* SHOW ADDONS IN KITCHEN */}
+                  {i.addons?.length > 0 && (
+                    <div style={{ fontSize: 12, color: "green" }}>
+                      + {i.addons.join(", ")}
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -297,7 +284,7 @@ export default function App() {
           <h2>Completed Orders</h2>
 
           {done.map(o => (
-            <div key={o.id}>
+            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
               <b>Order #{o.id}</b>
               <h4>₱{o.total}</h4>
             </div>
