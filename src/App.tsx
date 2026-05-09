@@ -69,7 +69,6 @@ export default function App() {
 
   const normalizedSearch = search.toLowerCase().trim();
 
-  /* ================= FILTER ================= */
   const baseFiltered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
@@ -87,14 +86,17 @@ export default function App() {
       .filter(g => g.items.length > 0);
   }, [baseFiltered]);
 
-  /* ================= CART ================= */
+  /* ================= CART SAFE FIX ================= */
   const addToCart = (item: any) => {
     setCart(prev => {
-      const i = prev.findIndex(p => p.id === item.id && p.size === item.size);
+      const index = prev.findIndex(p => p.id === item.id && p.size === item.size);
 
-      if (i !== -1) {
+      if (index !== -1) {
         const updated = [...prev];
-        updated[i].qty += 1;
+        updated[index] = {
+          ...updated[index],
+          qty: updated[index].qty + 1
+        };
         return updated;
       }
 
@@ -105,8 +107,16 @@ export default function App() {
   const addHot = (p: any) => addToCart({ ...p, size: "12oz" });
   const addIced = (p: any, size: "16oz" | "20oz") => addToCart({ ...p, size });
 
-  const removeFromCart = (i: number) =>
-    setCart(prev => prev.filter((_, idx) => idx !== i));
+  const computeItemPrice = (item: any) => {
+    const base = item.price * item.qty;
+    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
+    return base + addon;
+  };
+
+  const cartTotal = useMemo(
+    () => cart.reduce((sum, i) => sum + computeItemPrice(i), 0),
+    [cart]
+  );
 
   const toggleExtraShot = (idx: number) => {
     setCart(prev => {
@@ -115,9 +125,7 @@ export default function App() {
 
       if (!item.addons) item.addons = [];
 
-      const has = item.addons.includes("Extra Shot");
-
-      if (has) {
+      if (item.addons.includes("Extra Shot")) {
         item.addons = item.addons.filter((a: string) => a !== "Extra Shot");
       } else {
         item.addons.push("Extra Shot");
@@ -127,18 +135,6 @@ export default function App() {
     });
   };
 
-  const computeItemPrice = (item: any) => {
-    const base = item.price * item.qty;
-    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
-    return base + addon;
-  };
-
-  const cartTotal = useMemo(() =>
-    cart.reduce((s, i) => s + computeItemPrice(i), 0),
-    [cart]
-  );
-
-  /* ================= CHECKOUT ================= */
   const checkout = () => {
     if (!cart.length) return;
 
@@ -166,7 +162,6 @@ export default function App() {
   const ongoing = orders.filter(o => o.status === "ongoing");
   const done = orders.filter(o => o.status === "done");
 
-  /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
@@ -190,6 +185,7 @@ export default function App() {
       {/* CASHIER */}
       {view === "cashier" && (
         <div style={{ display: "flex", flex: 1 }}>
+
           <div style={{ flex: 1, padding: 10 }}>
             <input
               value={search}
@@ -223,31 +219,38 @@ export default function App() {
 
           {/* CART */}
           <div style={{ width: 300, padding: 10 }}>
+
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
               <div key={idx} style={{ marginBottom: 10 }}>
-                <b>{i.name}</b>
+                <b>
+                  {i.name} {i.size ? `(${i.size})` : ""}
+                </b>
 
                 <div>
                   ₱{i.price} × {i.qty} = ₱{computeItemPrice(i)}
                 </div>
 
                 <div style={{ display: "flex", gap: 5 }}>
-                  <button onClick={() => setCart(prev => {
-                    const u = [...prev];
-                    if (u[idx].qty > 1) u[idx].qty--;
-                    else u.splice(idx, 1);
-                    return u;
-                  })}>-</button>
+                  <button onClick={() => {
+                    setCart(prev => {
+                      const u = [...prev];
+                      if (u[idx].qty > 1) u[idx].qty--;
+                      else u.splice(idx, 1);
+                      return u;
+                    });
+                  }}>-</button>
 
                   <span>{i.qty}</span>
 
-                  <button onClick={() => setCart(prev => {
-                    const u = [...prev];
-                    u[idx].qty++;
-                    return u;
-                  })}>+</button>
+                  <button onClick={() => {
+                    setCart(prev => {
+                      const u = [...prev];
+                      u[idx].qty++;
+                      return u;
+                    });
+                  }}>+</button>
                 </div>
 
                 {i.coffee && (
@@ -255,14 +258,13 @@ export default function App() {
                     Extra Shot (+₱10)
                   </button>
                 )}
-
-                <button onClick={() => removeFromCart(idx)}>Remove</button>
               </div>
             ))}
 
             <h4>Total: ₱{cartTotal}</h4>
             <button onClick={checkout}>Checkout</button>
           </div>
+
         </div>
       )}
 
