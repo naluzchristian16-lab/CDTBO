@@ -101,22 +101,29 @@ export default function App() {
   };
 
   /* ================= FILTER ================= */
-  const filtered = products.filter((p) => {
-    const categoryMatch = category === "All Products" || p.category === category;
-    return categoryMatch && p.name.toLowerCase().includes(search.toLowerCase());
-  });
+  const normalizedSearch = search.toLowerCase().trim();
 
-  const groupedResults = categories
-    .filter(c => c !== "All Products")
-    .map(c => ({
+const baseFiltered = useMemo(() => {
+  return products.filter((p) => {
+    const matchCategory =
+      category === "All Products" || p.category === category;
+
+    const matchSearch =
+      p.name.toLowerCase().includes(normalizedSearch);
+
+    return matchCategory && matchSearch;
+  });
+}, [category, search]);
+
+const groupedResults = useMemo(() => {
+  return categories
+    .filter((c) => c !== "All Products")
+    .map((c) => ({
       category: c,
-      items: products.filter(
-        p =>
-          p.category === c &&
-          p.name.toLowerCase().includes(search.toLowerCase())
-      )
+      items: baseFiltered.filter((p) => p.category === c)
     }))
-    .filter(g => g.items.length > 0);
+    .filter((g) => g.items.length > 0);
+}, [baseFiltered]);
 
   /* ================= CART PRICE ================= */
   const computeItemPrice = (item: any) => {
