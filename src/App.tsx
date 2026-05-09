@@ -14,34 +14,14 @@ const categories = [
 const products = [
   { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 84, type: "hot", coffee: true },
   { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 94, type: "hot", coffee: true },
-  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 94, type: "hot", coffee: true },
-  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 104, type: "hot", coffee: true },
-  { id: 5, name: "Hot Strawberry Latte", category: "Hot Drinks", size: "12oz", price: 104, type: "hot", coffee: true },
-  { id: 6, name: "Hot Strawberry Mocha", category: "Hot Drinks", size: "12oz", price: 104, type: "hot", coffee: true },
-  { id: 7, name: "Hot Matcha Latte", category: "Hot Drinks", size: "12oz", price: 94, type: "hot", coffee: false },
-  { id: 8, name: "Hot Strawberry Matcha", category: "Hot Drinks", size: "12oz", price: 104, type: "hot", coffee: false },
-  { id: 9, name: "Hot Strawberry Dirty Matcha", category: "Hot Drinks", size: "12oz", price: 114, type: "hot", coffee: true },
-  { id: 10, name: "Hot Blueberry Matcha", category: "Hot Drinks", size: "12oz", price: 104, type: "hot", coffee: false },
-
   { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 94, type: "iced", coffee: true },
-  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 104, type: "iced", coffee: true },
-  { id: 13, name: "Iced Mocha", category: "Iced Coffee", size: "16oz", price: 104, type: "iced", coffee: true },
-  { id: 14, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 15, name: "Iced Ube Macchiato", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 16, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
-
-  { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 19, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-
-  { id: 25, name: "Matcha Latte", category: "Matcha Collection", size: "16oz", price: 104, type: "iced", coffee: false },
-  { id: 26, name: "Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: true }
+  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 104, type: "iced", coffee: true }
 ];
 
 /* ================= ADDONS ================= */
 const addons = { "Extra Shot": 10 };
 
-/* ================= ORDER NUMBER ================= */
+/* ================= ORDER ID ================= */
 const formatOrderId = (id) => {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -74,7 +54,7 @@ export default function App() {
       .filter(g => g.items.length > 0);
   }, [baseFiltered]);
 
-  /* ================= CART (FIXED: NO MERGE ISSUE) ================= */
+  /* ================= CART FIXED ================= */
   const addToCart = (item) => {
     setCart(prev => {
       const index = prev.findIndex(
@@ -90,16 +70,44 @@ export default function App() {
         return updated;
       }
 
-      return [...prev, { ...item, qty: 1, addons: [] }];
+      return [
+        ...prev,
+        {
+          ...item,
+          qty: 1,
+          addons: item.addons ? [...item.addons] : []
+        }
+      ];
     });
   };
 
-  const addHot = (p) => addToCart({ ...p, size: "12oz" });
-  const addIced = (p, size) => addToCart({ ...p, size });
+  const addHot = (p) => addToCart({ ...p, size: "12oz", addons: [] });
+  const addIced = (p, size) => addToCart({ ...p, size, addons: [] });
 
-  const computeItemPrice = (i) => {
-    const base = i.price * i.qty;
-    const addon = i.addons?.includes("Extra Shot") ? addons["Extra Shot"] * i.qty : 0;
+  /* ================= EXTRA SHOT FIXED ================= */
+  const toggleExtraShot = (idx) => {
+    setCart(prev => {
+      const updated = [...prev];
+      const item = { ...updated[idx] };
+
+      item.addons = item.addons ? [...item.addons] : [];
+
+      if (item.addons.includes("Extra Shot")) {
+        item.addons = item.addons.filter(a => a !== "Extra Shot");
+      } else {
+        item.addons.push("Extra Shot");
+      }
+
+      updated[idx] = item;
+      return updated;
+    });
+  };
+
+  const computeItemPrice = (item) => {
+    const base = item.price * item.qty;
+    const addon = item.addons?.includes("Extra Shot")
+      ? addons["Extra Shot"] * item.qty
+      : 0;
     return base + addon;
   };
 
@@ -136,7 +144,6 @@ export default function App() {
   const ongoing = orders.filter(o => o.status === "ongoing");
   const done = orders.filter(o => o.status === "done");
 
-  /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
@@ -193,18 +200,34 @@ export default function App() {
             ))}
           </div>
 
-          {/* CART (RESTORED +/-) */}
+          {/* CART */}
           <div style={{ width: 300, padding: 10 }}>
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 10 }}>
+              <div key={idx} style={{ marginBottom: 12 }}>
                 <b>{i.name}</b> {i.size}
-                {i.addons?.includes("Extra Shot") && " +Extra Shot"}
+
+                {/* EXTRA SHOT ALWAYS VISIBLE */}
+                {i.coffee && (
+                  <div>
+                    <button onClick={() => toggleExtraShot(idx)}>
+                      {i.addons?.includes("Extra Shot")
+                        ? "Remove Extra Shot"
+                        : "Add Extra Shot (+₱10)"}
+                    </button>
+                  </div>
+                )}
+
+                {i.addons?.includes("Extra Shot") && (
+                  <div style={{ color: "green" }}>
+                    + Extra Shot
+                  </div>
+                )}
 
                 <div>₱{computeItemPrice(i)}</div>
 
-                {/* QTY CONTROLS */}
+                {/* +/- CONTROLS */}
                 <div style={{ display: "flex", gap: 5 }}>
                   <button onClick={() => setCart(prev => {
                     const u = [...prev];
@@ -221,12 +244,6 @@ export default function App() {
                     return u;
                   })}>+</button>
                 </div>
-
-                <button
-                  onClick={() => setCart(prev => prev.filter((_, i2) => i2 !== idx))}
-                >
-                  Remove
-                </button>
               </div>
             ))}
 
