@@ -211,7 +211,8 @@ export default function App() {
 
     {/* ================= CASHIER ================= */}
     {view === "cashier" && (
-      <>
+      <div style={{ display: "flex", flex: 1 }}>
+
         {/* MAIN */}
         <div style={{ flex: 1, padding: 10, paddingTop: 60 }}>
           <input
@@ -284,7 +285,8 @@ export default function App() {
             Checkout
           </button>
         </div>
-      </>
+
+      </div>
     )}
 
     {/* ================= KITCHEN ================= */}
