@@ -1,15 +1,3 @@
-<div style={{
-  width: "100%",
-  padding: 10,
-  background: "#111",
-  color: "#fff",
-  display: "flex",
-  justifyContent: "space-between"
-}}>
-  <span>Coffee D' Titos' POS</span>
-  <span>{new Date().toLocaleString()}</span>
-</div>
-  
 import { useMemo, useState } from "react";
 
 /* ================= CATEGORIES ================= */
@@ -44,7 +32,7 @@ const products = [
   { id: 25, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
   { id: 26, name: "Oatside Mocha", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
   { id: 27, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 28, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
+  { id: 28, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: false },
   { id: 29, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: false },
   { id: 30, name: "Oatside Strawberry Mocha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
   { id: 31, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
@@ -197,17 +185,6 @@ export default function App() {
   };
 
   /* ================= CHECKOUT ================= */
-  const getOrderNumber = () => {
-  const now = new Date();
-
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const yy = String(now.getFullYear()).slice(-2);
-
-  const count = orders.length + 1;
-
-  return `Order#${mm}${dd}${yy}${String(count).padStart(4, "0")}`;
-};
   const checkout = async () => {
     if (!cart.length) return;
 
@@ -261,10 +238,26 @@ const order = {
   const ongoing = orders.filter((o) => o.status !== "done");
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
+    <div
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+    background: "#111",
+    color: "#fff",
+    display: "flex",
+    justifyContent: "space-between",
+    zIndex: 10
+  }}
+>
+  <span>Coffee D' Titos' POS</span>
+  <span>{new Date().toLocaleString()}</span>
+</div>
 
       {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10, borderRight: "1px solid #ddd" }}>
+      <div style={{ width: 220, padding: 10, paddingTop: 60, borderRight: "1px solid #ddd" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
   <img
     src="/CFDTLOGO.png"
@@ -305,7 +298,7 @@ const order = {
       {/* CASHIER */}
       {view === "cashier" && (
         <>
-          <div style={{ flex: 1, padding: 10 }}>
+          <div style={{ flex: 1, padding: 10, paddingTop: 60 }}>
             <h3>Products</h3>
 
             <input
