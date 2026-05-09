@@ -10,7 +10,7 @@ const categories = [
   "Oatside Series"
 ];
 
-/* ================= PRODUCTS (UNCHANGED) ================= */
+/* ================= PRODUCTS ================= */
 const products = [
   { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 84, type: "hot", coffee: true },
   { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 94, type: "hot", coffee: true },
@@ -57,8 +57,6 @@ const products = [
   { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true }
 ];
 
-const addons = { "Extra Shot": 10 };
-
 export default function App() {
   const [view, setView] = useState("cashier");
   const [orders, setOrders] = useState<any[]>([]);
@@ -66,12 +64,16 @@ export default function App() {
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
 
+  const [orderType, setOrderType] = useState("dine-in");
+  const [deliveryFee, setDeliveryFee] = useState("");
   const [discount, setDiscount] = useState("");
+  const [cash, setCash] = useState("");
 
   const baseFiltered = useMemo(() => {
-    return products.filter(p =>
-      (category === "All Products" || p.category === category) &&
-      p.name.toLowerCase().includes(search.toLowerCase().trim())
+    return products.filter(
+      p =>
+        (category === "All Products" || p.category === category) &&
+        p.name.toLowerCase().includes(search.toLowerCase().trim())
     );
   }, [category, search]);
 
@@ -85,12 +87,23 @@ export default function App() {
       .filter(g => g.items.length > 0);
   }, [baseFiltered]);
 
+  const generateOrderNumber = () => {
+    const d = new Date();
+    return (
+      String(d.getMonth() + 1).padStart(2, "0") +
+      String(d.getDate()).padStart(2, "0") +
+      String(d.getFullYear()).slice(-2) +
+      String(orders.length + 1).padStart(4, "0")
+    );
+  };
+
   const addToCart = (item: any) => {
     setCart(prev => {
-      const i = prev.findIndex(p =>
-        p.id === item.id &&
-        p.size === item.size &&
-        JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
+      const i = prev.findIndex(
+        p =>
+          p.id === item.id &&
+          p.size === item.size &&
+          JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
       );
 
       if (i !== -1) {
@@ -103,39 +116,106 @@ export default function App() {
     });
   };
 
-  const addHot = (p) => addToCart({ ...p, size: "12oz" });
-  const addIced = (p, size) => addToCart({ ...p, size });
+  const addHot = (p: any) => addToCart({ ...p, size: "12oz" });
+  const addIced = (p: any, size: string) => addToCart({ ...p, size });
 
-  const toggleExtraShot = (idx) => {
+  const toggleExtraShot = (idx: number) => {
     setCart(prev => {
       const copy = [...prev];
-      const item = copy[idx];
-      item.addons = item.addons || [];
+      const current = copy[idx];
 
-      if (item.addons.includes("Extra Shot")) {
-        item.addons = item.addons.filter(a => a !== "Extra Shot");
-      } else {
-        item.addons.push("Extra Shot");
+      const updatedAddons = current.addons?.includes("Extra Shot")
+        ? current.addons.filter((a: string) => a !== "Extra Shot")
+        : [...(current.addons || []), "Extra Shot"];
+
+      const existing = copy.findIndex(
+        (p, i) =>
+          i !== idx &&
+          p.id === current.id &&
+          p.size === current.size &&
+          JSON.stringify(p.addons || []) === JSON.stringify(updatedAddons)
+      );
+
+      if (existing !== -1) {
+        copy[existing].qty += current.qty;
+        copy.splice(idx, 1);
+        return copy;
       }
+
+      copy[idx] = {
+        ...current,
+        addons: updatedAddons
+      };
 
       return copy;
     });
   };
 
-  const computeItemPrice = (item) => {
+  const computeItemPrice = (item: any) => {
     const base = item.price * item.qty;
     const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
     return base + addon;
   };
 
-  const cartSubtotal = cart.reduce((s, i) => s + computeItemPrice(i), 0);
+  const cartTotal = cart.reduce((s, i) => s + computeItemPrice(i), 0);
 
+  const fee = orderType === "delivery" ? Number(deliveryFee || 0) : 0;
   const discountValue = Number(discount || 0);
-  const cartTotal = cartSubtotal - discountValue;
+  const totalWithFee = cartTotal + fee - discountValue;
+  const cashPaid = Number(cash || 0);
+  const change = cash ? cashPaid - totalWithFee : 0;
+
+  const checkout = async () => {
+    if (!cart.length) return;
+
+    const now = new Date();
+
+    const order = {
+      orderNumber: generateOrderNumber(),
+      date: now.toLocaleDateString(),
+      time: now.toLocaleTimeString(),
+      items: cart,
+      total: totalWithFee,
+      status: "ongoing",
+      orderType,
+      deliveryFee: fee,
+      discount: discountValue,
+      cash: cashPaid,
+      change
+    };
+
+    setOrders(prev => [order, ...prev]);
+    setCart([]);
+
+    setOrderType("dine-in");
+    setDeliveryFee("");
+    setDiscount("");
+    setCash("");
+
+    try {
+      await fetch("/api/saveOrder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order)
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const markDone = (id: string) => {
+    setOrders(prev =>
+      prev.map(o =>
+        o.orderNumber === id ? { ...o, status: "done" } : o
+      )
+    );
+  };
+
+  const ongoing = orders.filter(o => o.status === "ongoing");
+  const done = orders.filter(o => o.status === "done");
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-
       {/* SIDEBAR */}
       <div style={{ width: 220, padding: 10 }}>
         <h3>Coffee D' Titos</h3>
@@ -147,25 +227,31 @@ export default function App() {
         <hr />
 
         {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>
-            {c}
-          </button>
+          <div key={c}>
+            <button onClick={() => setCategory(c)}>{c}</button>
+          </div>
         ))}
       </div>
 
       {/* CASHIER */}
       {view === "cashier" && (
         <div style={{ display: "flex", flex: 1 }}>
-
-          {/* MENU (RESTORED) */}
+          {/* MENU */}
           <div style={{ flex: 1, padding: 10 }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search"
+            />
 
-            {(search ? groupedResults : [{ category, items: baseFiltered }]).map((g, i) => (
+            {(search
+              ? groupedResults
+              : [{ category, items: baseFiltered }]
+            ).map((g: any, i: number) => (
               <div key={i}>
                 <h4>{g.category}</h4>
 
-                {g.items.map(p => (
+                {g.items.map((p: any) => (
                   <div key={p.id}>
                     {p.name} ₱{p.price}
 
@@ -186,11 +272,11 @@ export default function App() {
           </div>
 
           {/* CART */}
-          <div style={{ width: 300, padding: 10 }}>
+          <div style={{ width: 320, padding: 10 }}>
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 10 }}>
+              <div key={idx} style={{ marginBottom: 12 }}>
                 <b>{i.name}</b> ({i.size})
 
                 {i.addons?.length > 0 && (
@@ -203,48 +289,178 @@ export default function App() {
                   ₱{i.price} x {i.qty} = ₱{computeItemPrice(i)}
                 </div>
 
-                <button onClick={() => {
-                  setCart(prev => {
-                    const c = [...prev];
-                    if (c[idx].qty > 1) c[idx].qty--;
-                    else c.splice(idx, 1);
-                    return c;
-                  });
-                }}>-</button>
+                <button
+                  onClick={() =>
+                    setCart(prev => {
+                      const c = [...prev];
+                      if (c[idx].qty > 1) c[idx].qty--;
+                      else c.splice(idx, 1);
+                      return c;
+                    })
+                  }
+                >
+                  -
+                </button>
 
                 <span style={{ margin: "0 8px" }}>{i.qty}</span>
 
-                <button onClick={() => {
-                  setCart(prev => {
-                    const c = [...prev];
-                    c[idx].qty++;
-                    return c;
-                  });
-                }}>+</button>
+                <button
+                  onClick={() =>
+                    setCart(prev => {
+                      const c = [...prev];
+                      c[idx].qty++;
+                      return c;
+                    })
+                  }
+                >
+                  +
+                </button>
 
                 {i.coffee && (
-                  <button onClick={() => toggleExtraShot(idx)}>
+                  <button
+                    onClick={() => toggleExtraShot(idx)}
+                    style={{ marginLeft: 8 }}
+                  >
                     Extra Shot
                   </button>
                 )}
               </div>
             ))}
 
-            {/* DISCOUNT (ADDED ONLY) */}
-            <input
-              placeholder="Discount"
-              value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
-            />
+            <div style={{ marginBottom: 8 }}>
+              <label>Order Type: </label>
+              <select
+                value={orderType}
+                onChange={e => setOrderType(e.target.value)}
+              >
+                <option value="dine-in">Dine-in</option>
+                <option value="take-out">Take-out</option>
+                <option value="delivery">Delivery</option>
+              </select>
+            </div>
 
-            <h4>Subtotal: ₱{cartSubtotal}</h4>
-            <h4>Total: ₱{cartTotal}</h4>
+            {orderType === "delivery" && (
+              <div style={{ marginBottom: 8 }}>
+                <input
+                  placeholder="Delivery Fee"
+                  value={deliveryFee}
+                  onChange={e => setDeliveryFee(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div style={{ marginBottom: 8 }}>
+              <input
+                placeholder="Discount"
+                value={discount}
+                onChange={e => setDiscount(e.target.value)}
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <input
+                placeholder="Cash Received"
+                value={cash}
+                onChange={e => setCash(e.target.value)}
+              />
+            </div>
+
+            <h4>Total: ₱{totalWithFee}</h4>
+
+            {cash && (
+              <h4 style={{ color: change >= 0 ? "green" : "red" }}>
+                Change: ₱{change}
+              </h4>
+            )}
+
+            <button onClick={checkout}>Checkout</button>
           </div>
-
         </div>
       )}
 
-      {/* KITCHEN + ADMIN (unchanged logic, omitted for brevity in this fix block) */}
+      {/* KITCHEN */}
+      {view === "kitchen" && (
+        <div style={{ flex: 1, padding: 20, textAlign: "center" }}>
+          <h2>Kitchen</h2>
+
+          {ongoing.map(o => (
+            <div
+              key={o.orderNumber}
+              style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}
+            >
+              <b>Order #{o.orderNumber}</b>
+
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>
+                  {i.name} ({i.size}) x{i.qty}
+                  {i.addons?.length > 0 && (
+                    <div style={{ fontSize: 12, color: "green" }}>
+                      + {i.addons.join(", ")}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <h3>₱{o.total}</h3>
+
+              <button onClick={() => markDone(o.orderNumber)}>
+                Done
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ADMIN */}
+      {view === "admin" && (
+        <div
+          style={{
+            flex: 1,
+            padding: 20,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center"
+          }}
+        >
+          <h2>Completed Orders</h2>
+
+          {done.map(o => (
+            <div
+              key={o.orderNumber}
+              style={{
+                width: "80%",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                padding: 15,
+                marginBottom: 15
+              }}
+            >
+              <b style={{ fontSize: 18 }}>Order #{o.orderNumber}</b>
+
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                {o.date} • {o.time}
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                {o.items.map((i: any, idx: number) => (
+                  <div key={idx} style={{ marginBottom: 8 }}>
+                    🍹 <b>{i.name}</b> ({i.size}) x{i.qty}
+
+                    {i.addons?.length > 0 && (
+                      <div style={{ fontSize: 12, color: "green" }}>
+                        + {i.addons.join(", ")}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <h3>Total: ₱{o.total}</h3>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
