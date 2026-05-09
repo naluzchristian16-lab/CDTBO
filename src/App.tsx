@@ -236,53 +236,64 @@ export default function App() {
           </div>
 
           {/* CART */}
-          <div style={{ width: 300 }}>
-            <h3>Cart</h3>
+<div style={{ width: 300 }}>
+  <h3>Cart</h3>
 
-            {cart.map((i, idx) => (
-              <div>
-  <b>{i.name}</b> ({i.size})
-</div>
+  {cart.map((i, idx) => (
+    <div key={idx} style={{ marginBottom: 12, borderBottom: "1px solid #eee", paddingBottom: 8 }}>
 
-{/* 👇 ADD THIS */}
-{i.addons?.length > 0 && (
-  <div style={{ fontSize: 12, color: "green" }}>
-    + {i.addons.join(", ")}
-  </div>
-)}
+      <div>
+        <b>{i.name}</b> ({i.size})
+      </div>
 
-                <div>
-                  ₱{i.price} x {i.qty} = ₱{computeItemPrice(i)}
-                </div>
-
-                <button onClick={() => setCart(prev => {
-                  const c = [...prev];
-                  if (c[idx].qty > 1) c[idx].qty--;
-                  else c.splice(idx, 1);
-                  return c;
-                })}>-</button>
-
-                <span>{i.qty}</span>
-
-                <button onClick={() => setCart(prev => {
-                  const c = [...prev];
-                  c[idx].qty++;
-                  return c;
-                })}>+</button>
-
-                {i.coffee && (
-                  <button onClick={() => toggleExtraShot(idx)}>
-                    Extra Shot
-                  </button>
-                )}
-              </div>
-            ))}
-
-            <h4>Total: ₱{cartTotal}</h4>
-            <button onClick={checkout}>Checkout</button>
-          </div>
+      {/* ADDONS */}
+      {i.addons?.length > 0 && (
+        <div style={{ fontSize: 12, color: "green" }}>
+          + {i.addons.join(", ")}
         </div>
       )}
+
+      <div>
+        ₱{i.price} x {i.qty} = ₱{computeItemPrice(i)}
+      </div>
+
+      {/* QTY CONTROLS */}
+      <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 5 }}>
+        
+        <button onClick={() => setCart(prev => {
+          const c = [...prev];
+          if (c[idx].qty > 1) c[idx].qty--;
+          else c.splice(idx, 1);
+          return c;
+        })}>
+          -
+        </button>
+
+        <span>{i.qty}</span>
+
+        <button onClick={() => setCart(prev => {
+          const c = [...prev];
+          c[idx].qty++;
+          return c;
+        })}>
+          +
+        </button>
+
+      </div>
+
+      {/* EXTRA SHOT */}
+      {i.coffee && (
+        <button onClick={() => toggleExtraShot(idx)} style={{ marginTop: 5 }}>
+          Extra Shot
+        </button>
+      )}
+
+    </div>
+  ))}
+
+  <h4>Total: ₱{cartTotal}</h4>
+  <button onClick={checkout}>Checkout</button>
+</div>
 
       {/* KITCHEN */}
       {view === "kitchen" && (
