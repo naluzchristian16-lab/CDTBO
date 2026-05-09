@@ -10,7 +10,7 @@ const categories = [
   "Oatside Series"
 ];
 
-/* ================= PRODUCTS (UNCHANGED) ================= */
+/* ================= PRODUCTS ================= */
 const products = [
   { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 84, type: "hot", coffee: true },
   { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 94, type: "hot", coffee: true },
@@ -33,57 +33,34 @@ const products = [
 
   { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
   { id: 19, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 20, name: "Mixed Berries Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 21, name: "Strawberry Choco", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
-  { id: 22, name: "Green Apple Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
-  { id: 23, name: "Blueberry Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
-  { id: 24, name: "Lychee Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
 
   { id: 25, name: "Matcha Latte", category: "Matcha Collection", size: "16oz", price: 104, type: "iced", coffee: false },
-  { id: 26, name: "Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 27, name: "Strawberry Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 28, name: "Blueberry Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 29, name: "Mixed Berries Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 30, name: "Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 124, type: "iced", coffee: true },
-
-  { id: 31, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
-  { id: 32, name: "Oatside Mocha", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
-  { id: 33, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 34, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: false },
-  { id: 35, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 36, name: "Oatside Strawberry Mocha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 37, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
-  { id: 38, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true }
+  { id: 26, name: "Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: true }
 ];
 
-const addons: any = { "Extra Shot": 10 };
+/* ================= ADDONS ================= */
+const addons = { "Extra Shot": 10 };
 
 /* ================= ORDER NUMBER ================= */
-const formatOrderId = (id: number) => {
+const formatOrderId = (id) => {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const yy = String(d.getFullYear()).slice(-2);
-
-  const seq = String(id).slice(-4).padStart(4, "0");
-
-  return `${mm}${dd}${yy}${seq}`;
+  return `${mm}${dd}${yy}${String(id).slice(-4).padStart(4, "0")}`;
 };
 
 export default function App() {
   const [view, setView] = useState("cashier");
-  const [orders, setOrders] = useState<any[]>([]);
-  const [cart, setCart] = useState<any[]>([]);
+  const [orders, setOrders] = useState([]);
+  const [cart, setCart] = useState([]);
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
-
-  const normalizedSearch = search.toLowerCase().trim();
 
   const baseFiltered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
-      p.name.toLowerCase().includes(normalizedSearch)
+      p.name.toLowerCase().includes(search.toLowerCase())
     );
   }, [category, search]);
 
@@ -97,8 +74,8 @@ export default function App() {
       .filter(g => g.items.length > 0);
   }, [baseFiltered]);
 
-  /* ================= CART FIX (NO MERGE IF DIFFERENT ADDONS) ================= */
-  const addToCart = (item: any) => {
+  /* ================= CART (FIXED: NO MERGE ISSUE) ================= */
+  const addToCart = (item) => {
     setCart(prev => {
       const index = prev.findIndex(
         p =>
@@ -113,34 +90,16 @@ export default function App() {
         return updated;
       }
 
-      return [...prev, { ...item, qty: 1, addons: item.addons || [] }];
+      return [...prev, { ...item, qty: 1, addons: [] }];
     });
   };
 
-  const addHot = (p: any) => addToCart({ ...p, size: "12oz", addons: [] });
-  const addIced = (p: any, size: "16oz" | "20oz") =>
-    addToCart({ ...p, size, addons: [] });
+  const addHot = (p) => addToCart({ ...p, size: "12oz" });
+  const addIced = (p, size) => addToCart({ ...p, size });
 
-  const toggleExtraShot = (idx: number) => {
-    setCart(prev => {
-      const updated = [...prev];
-      const item = updated[idx];
-
-      item.addons = item.addons || [];
-
-      if (item.addons.includes("Extra Shot")) {
-        item.addons = item.addons.filter((a: string) => a !== "Extra Shot");
-      } else {
-        item.addons.push("Extra Shot");
-      }
-
-      return updated;
-    });
-  };
-
-  const computeItemPrice = (item: any) => {
-    const base = item.price * item.qty;
-    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
+  const computeItemPrice = (i) => {
+    const base = i.price * i.qty;
+    const addon = i.addons?.includes("Extra Shot") ? addons["Extra Shot"] * i.qty : 0;
     return base + addon;
   };
 
@@ -149,7 +108,6 @@ export default function App() {
     [cart]
   );
 
-  /* ================= CHECKOUT ================= */
   const checkout = () => {
     if (!cart.length) return;
 
@@ -167,15 +125,18 @@ export default function App() {
     setCart([]);
   };
 
-  const markDone = (id: number) => {
+  const markDone = (id) => {
     setOrders(prev =>
-      prev.map(o => (o.id === id ? { ...o, status: "done" } : o))
+      prev.map(o =>
+        o.id === id ? { ...o, status: "done" } : o
+      )
     );
   };
 
   const ongoing = orders.filter(o => o.status === "ongoing");
   const done = orders.filter(o => o.status === "done");
 
+  /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
@@ -199,6 +160,8 @@ export default function App() {
       {/* CASHIER */}
       {view === "cashier" && (
         <div style={{ display: "flex", flex: 1 }}>
+
+          {/* PRODUCTS */}
           <div style={{ flex: 1, padding: 10 }}>
             <input
               value={search}
@@ -230,23 +193,38 @@ export default function App() {
             ))}
           </div>
 
-          {/* CART */}
+          {/* CART (RESTORED +/-) */}
           <div style={{ width: 300, padding: 10 }}>
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx}>
+              <div key={idx} style={{ marginBottom: 10 }}>
                 <b>{i.name}</b> {i.size}
-
-                {i.addons?.includes("Extra Shot") && <span> (+Extra Shot)</span>}
+                {i.addons?.includes("Extra Shot") && " +Extra Shot"}
 
                 <div>₱{computeItemPrice(i)}</div>
 
-                <button onClick={() => toggleExtraShot(idx)}>
-                  Extra Shot
-                </button>
+                {/* QTY CONTROLS */}
+                <div style={{ display: "flex", gap: 5 }}>
+                  <button onClick={() => setCart(prev => {
+                    const u = [...prev];
+                    if (u[idx].qty > 1) u[idx].qty--;
+                    else u.splice(idx, 1);
+                    return u;
+                  })}>-</button>
 
-                <button onClick={() => setCart(prev => prev.filter((_, i2) => i2 !== idx))}>
+                  <span>{i.qty}</span>
+
+                  <button onClick={() => setCart(prev => {
+                    const u = [...prev];
+                    u[idx].qty++;
+                    return u;
+                  })}>+</button>
+                </div>
+
+                <button
+                  onClick={() => setCart(prev => prev.filter((_, i2) => i2 !== idx))}
+                >
                   Remove
                 </button>
               </div>
@@ -267,7 +245,7 @@ export default function App() {
             <div key={o.id}>
               <b>Order #{o.orderNo}</b>
 
-              {o.items.map((i: any, idx: number) => (
+              {o.items.map((i, idx) => (
                 <div key={idx}>
                   {i.name} {i.size}
                   {i.addons?.includes("Extra Shot") && " +Extra Shot"}
@@ -275,7 +253,6 @@ export default function App() {
               ))}
 
               <h4>₱{o.total}</h4>
-
               <button onClick={() => markDone(o.id)}>Done</button>
             </div>
           ))}
