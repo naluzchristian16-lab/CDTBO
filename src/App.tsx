@@ -240,8 +240,16 @@ export default function App() {
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx}>
-                <b>{i.name}</b> ({i.size})
+              <div>
+  <b>{i.name}</b> ({i.size})
+</div>
+
+{/* 👇 ADD THIS */}
+{i.addons?.length > 0 && (
+  <div style={{ fontSize: 12, color: "green" }}>
+    + {i.addons.join(", ")}
+  </div>
+)}
 
                 <div>
                   ₱{i.price} x {i.qty} = ₱{computeItemPrice(i)}
