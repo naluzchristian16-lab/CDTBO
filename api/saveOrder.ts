@@ -1,10 +1,6 @@
 import { google } from "googleapis";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   try {
     const order = req.body;
 
@@ -15,45 +11,57 @@ export default async function handler(req, res) {
       ["https://www.googleapis.com/auth/spreadsheets"]
     );
 
-    const sheets = google.sheets({ version: "v4", auth });
+    const sheets = google.sheets({
+      version: "v4",
+      auth
+    });
 
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
     const rows = order.items.map((item) => {
-      const addonQty = item.addons?.includes("Extra Shot") ? 1 : 0;
-
-      const addonTotal = addonQty * 10 * (item.qty || 1);
+      const addonTotal =
+        (item.addons?.includes("Extra Shot") ? 10 : 0) *
+        Number(item.qty || 1);
 
       const lineTotal =
-        (Number(item.price || 0) * Number(item.qty || 1)) + addonTotal;
+        Number(item.price || 0) * Number(item.qty || 1) + addonTotal;
 
       return [
-        order.orderNumber || order.id,
+        order.orderNumber || "",
         order.date || "",
         order.time || "",
         order.status || "ongoing",
+
+        order.orderType || "",
+        Number(order.deliveryFee || 0),
+        Number(order.discount || 0),
+
         item.name || "",
         item.size || "",
-        item.qty || 1,
-        (item.addons || []).join(", "),
+        Number(item.qty || 1),
+        item.addons?.join(", ") || "",
+
         lineTotal,
-        order.total || 0
+        Number(order.total || 0)
       ];
     });
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: "Orders!A:J",
+      range: "Orders!A:M",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: rows
       }
     });
 
-    return res.status(200).json({ success: true });
-
+    res.status(200).json({
+      success: true
+    });
   } catch (err) {
-    console.error("Google Sheets Error:", err);
-    return res.status(500).json({ error: "Failed to save order" });
+    console.error("saveOrder error:", err);
+    res.status(500).json({
+      error: "Save failed"
+    });
   }
 }
