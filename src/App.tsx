@@ -152,53 +152,174 @@ export default function App() {
   const ongoing = orders.filter(o => o.status !== "done");
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+  <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
-      {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10 }}>
-        <h3>Coffee D Titos</h3>
+    {/* HEADER */}
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      padding: 10,
+      background: "#111",
+      color: "#fff",
+      display: "flex",
+      justifyContent: "space-between",
+      zIndex: 10
+    }}>
+      <span>Coffee D' Titos POS</span>
+      <span>{new Date().toLocaleString()}</span>
+    </div>
 
-        {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>
-            {c}
+    {/* SIDEBAR */}
+    <div style={{ width: 220, padding: 10, paddingTop: 60, borderRight: "1px solid #ddd" }}>
+      <h3>Coffee D' Titos'</h3>
+
+      <button onClick={() => setView("cashier")}>Cashier</button>
+      <button onClick={() => setView("kitchen")}>Kitchen</button>
+      <button onClick={() => setView("admin")}>Admin</button>
+
+      <hr />
+
+      {categories.map(c => (
+        <button
+          key={c}
+          onClick={() => {
+            setCategory(c);
+            setSearch("");
+          }}
+          style={{
+            width: "100%",
+            marginBottom: 5,
+            background: category === c ? "#222" : "#eee",
+            color: category === c ? "#fff" : "#000"
+          }}
+        >
+          {c}
+        </button>
+      ))}
+    </div>
+
+    {/* ================= CASHIER ================= */}
+    {view === "cashier" && (
+      <>
+        <div style={{ flex: 1, padding: 10, paddingTop: 60 }}>
+
+          <input
+            placeholder="Search..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: "100%", padding: 8, marginBottom: 10 }}
+          />
+
+          {(search.trim() ? groupedResults : [{
+            category: category,
+            items: baseFiltered
+          }]).map((group, i) => (
+            <div key={i}>
+              <h4>{group.category}</h4>
+
+              {group.items.map(p => (
+                <div key={p.id} style={{ marginBottom: 6 }}>
+                  <b>{p.name}</b> ₱{p.price}
+
+                  {p.type === "hot" && (
+                    <button onClick={() => addHot(p)}>Add</button>
+                  )}
+
+                  {p.type === "iced" && (
+                    <>
+                      <button onClick={() => addIced(p, "16oz")}>Malaki</button>
+                      <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+
+        </div>
+
+        {/* CART */}
+        <div style={{ width: 300, padding: 10, borderLeft: "1px solid #ddd" }}>
+          <h3>Cart</h3>
+
+          {cart.map((i, idx) => (
+            <div key={idx} style={{ marginBottom: 5 }}>
+              {i.name} x{i.qty} = ₱{computeItemPrice(i)}
+              <button onClick={() => removeFromCart(idx)}>Remove</button>
+            </div>
+          ))}
+
+          <hr />
+
+          <b>Total: ₱{cartTotal}</b>
+          <br />
+
+          <button onClick={checkout} style={{ marginTop: 10 }}>
+            Checkout
           </button>
-        ))}
-      </div>
+        </div>
+      </>
+    )}
 
-      {/* MAIN */}
-      <div style={{ flex: 1, padding: 10 }}>
-        <input
-          placeholder="Search..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+    {/* ================= KITCHEN ================= */}
+    {view === "kitchen" && (
+      <div style={{ flex: 1, padding: 10, paddingTop: 60 }}>
+        <h3>Kitchen Orders</h3>
 
-        {(search.trim() ? groupedResults : [{
-          category: category,
-          items: baseFiltered
-        }]).map((group, i) => (
-          <div key={i}>
-            <h4>{group.category}</h4>
+        {orders.length === 0 && <p>No orders yet</p>}
 
-            {group.items.map(p => (
-              <div key={p.id}>
-                <b>{p.name}</b> ₱{p.price}
+        {orders.map(o => (
+          <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10, padding: 10 }}>
+            <b>{o.orderNumber}</b>
 
-                {p.type === "hot" && (
-                  <button onClick={() => addHot(p)}>Add</button>
-                )}
-
-                {p.type === "iced" && (
-                  <>
-                    <button onClick={() => addIced(p, "16oz")}>Malaki</button>
-                    <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
-                  </>
-                )}
+            {o.items.map((i, idx) => (
+              <div key={idx}>
+                {i.name} {i.size} x{i.qty}
               </div>
             ))}
+
+            <p>Total: ₱{o.total}</p>
+            <p>Status: {o.status}</p>
           </div>
         ))}
       </div>
+    )}
+
+    {/* ================= ADMIN ================= */}
+    {view === "admin" && (
+      <div style={{ flex: 1, padding: 10, paddingTop: 60 }}>
+        <h3>Admin Panel</h3>
+
+        <h4>Total Orders: {orders.length}</h4>
+
+        <h4>
+          Total Sales: ₱{orders.reduce((sum, o) => sum + o.total, 0)}
+        </h4>
+
+        <hr />
+
+        {orders.map(o => (
+          <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10, padding: 10 }}>
+            <b>{o.orderNumber}</b>
+
+            <p>{o.date} {o.time}</p>
+
+            {o.items.map((i, idx) => (
+              <div key={idx}>
+                {i.name} x{i.qty}
+              </div>
+            ))}
+
+            <b>Total: ₱{o.total}</b>
+          </div>
+        ))}
+      </div>
+    )}
+
+  </div>
+);
 
       {/* CART */}
       <div style={{ width: 300, padding: 10 }}>
