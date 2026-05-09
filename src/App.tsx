@@ -13,7 +13,7 @@
 import { useMemo, useState } from "react";
 
 /* ================= CATEGORIES ================= */
-const categories = ["Hot Drinks", "Iced Coffee", "Non-Coffee", "Matcha Collection", "Oatside Series"];
+const categories = ["All Products", "Hot Drinks", "Iced Coffee", "Non-Coffee", "Matcha Collection", "Oatside Series"];
 
 /* ================= PRODUCTS ================= */
 const products = [
@@ -105,7 +105,7 @@ export default function App() {
 
   const [orders, setOrders] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
-  const [category, setCategory] = useState("Hot Drinks");
+  const [category, setCategory] = useState("All Products");
 
   const [search, setSearch] = useState("");
 
@@ -115,11 +115,25 @@ export default function App() {
 
   /* ================= FILTER ================= */
   const filtered = products.filter((p) => {
-    return (
-      p.category === category &&
-      p.name.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  const categoryMatch =
+    category === "All Products" || p.category === category;
+
+  return (
+    categoryMatch &&
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+});
+  const groupedResults = categories
+  .filter((c) => c !== "All Products")
+  .map((c) => ({
+    category: c,
+    items: products.filter(
+      (p) =>
+        p.category === c &&
+        p.name.toLowerCase().includes(search.toLowerCase())
+    )
+  }))
+  .filter((group) => group.items.length > 0);
 
   /* ================= PRICE ================= */
   const computeItemPrice = (item: any) => {
@@ -301,23 +315,47 @@ const order = {
               style={{ padding: 8, marginBottom: 10, width: "100%" }}
             />
 
-            {filtered.map((p) => (
-              <div key={p.id} style={{ marginBottom: 10 }}>
-                <b>{p.name}</b> ₱{p.price}
+            {search.trim() ? (
+  groupedResults.map((group) => (
+    <div key={group.category} style={{ marginBottom: 20 }}>
+      <h4 style={{ marginBottom: 8 }}>{group.category}</h4>
 
-                {p.type === "hot" && (
-                  <button onClick={() => addHot(p)}>Add</button>
-                )}
+      {group.items.map((p) => (
+        <div key={p.id} style={{ marginBottom: 10 }}>
+          <b>{p.name}</b> ₱{p.price}
 
-                {p.type === "iced" && (
-                  <>
-                    <button onClick={() => addIced(p, "16oz")}>Malaki</button>
-                    <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
+          {p.type === "hot" && (
+            <button onClick={() => addHot(p)}>Add</button>
+          )}
+
+          {p.type === "iced" && (
+            <>
+              <button onClick={() => addIced(p, "16oz")}>Malaki</button>
+              <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  ))
+) : (
+  filtered.map((p) => (
+    <div key={p.id} style={{ marginBottom: 10 }}>
+      <b>{p.name}</b> ₱{p.price}
+
+      {p.type === "hot" && (
+        <button onClick={() => addHot(p)}>Add</button>
+      )}
+
+      {p.type === "iced" && (
+        <>
+          <button onClick={() => addIced(p, "16oz")}>Malaki</button>
+          <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
+        </>
+      )}
+    </div>
+  ))
+)}
 
           {/* CART */}
           <div style={{ width: 340, padding: 10, borderLeft: "1px solid #ddd" }}>
@@ -427,7 +465,7 @@ const order = {
   bottom: 0,
   left: 0
 }}>
-  Coffee D Titos • Fast Fresh Coffee Experience
+  Coffee D' Titos' • Fast Fresh Coffee Experience
 </div>
     </div>
   );
