@@ -197,11 +197,50 @@ export default function App() {
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx}>
-                {i.name} x{i.qty} = ₱{compute(i)}
-                <button onClick={() => removeFromCart(idx)}>X</button>
-              </div>
-            ))}
+  <div key={idx} style={{ marginBottom: 8 }}>
+    
+    <b>{i.name}</b>  
+    <div>₱{i.price} × {i.qty} = ₱{computeItemPrice(i)}</div>
+
+    <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+      
+      {/* MINUS */}
+      <button
+        onClick={() => {
+          setCart(prev => {
+            const updated = [...prev];
+
+            if (updated[idx].qty > 1) {
+              updated[idx].qty -= 1;
+            } else {
+              updated.splice(idx, 1); // remove if 1 na lang
+            }
+
+            return updated;
+          });
+        }}
+      >
+        -
+      </button>
+
+      <span>{i.qty}</span>
+
+      {/* PLUS */}
+      <button
+        onClick={() => {
+          setCart(prev => {
+            const updated = [...prev];
+            updated[idx].qty += 1;
+            return updated;
+          });
+        }}
+      >
+        +
+      </button>
+
+    </div>
+  </div>
+))}
 
             <h4>Total: ₱{cartTotal}</h4>
             <button onClick={checkout}>Checkout</button>
