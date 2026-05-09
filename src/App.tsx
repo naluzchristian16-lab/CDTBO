@@ -39,15 +39,6 @@ const products = [
   { id: 16, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
   { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 114, type: "iced", coffee: true },
   
-  // 20oz (Mas Malaki)
-  { id: 18, name: "Iced Americano", category: "Iced Coffee", size: "20oz", price: 104, type: "iced", coffee: true },
-  { id: 19, name: "Iced Spanish Latte", category: "Iced Coffee", size: "20oz", price: 114, type: "iced", coffee: true },
-  { id: 20, name: "Iced Mocha", category: "Iced Coffee", size: "20oz", price: 114, type: "iced", coffee: true },
-  { id: 21, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "20oz", price: 124, type: "iced", coffee: true },
-  { id: 22, name: "Iced Ube Macchiato", category: "Iced Coffee", size: "20oz", price: 124, type: "iced", coffee: true },
-  { id: 23, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "20oz", price: 124, type: "iced", coffee: true },
-  { id: 24, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "20oz", price: 124, type: "iced", coffee: true },
-  
   // ================= OATSIDE SERIES =================
   // 16oz
   { id: 25, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 104, type: "iced", coffee: true },
@@ -59,18 +50,7 @@ const products = [
   { id: 31, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: true },
   { id: 32, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 114, type: "iced", coffee: false },
   { id: 33, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true },
-  
-  // 20oz
-  { id: 34, name: "Oatside Spanish Latte", category: "Oatside Series", size: "20oz", price: 114, type: "iced", coffee: true },
-  { id: 35, name: "Oatside Mocha", category: "Oatside Series", size: "20oz", price: 114, type: "iced", coffee: true },
-  { id: 36, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "20oz", price: 124, type: "iced", coffee: true },
-  { id: 37, name: "Oatside Matcha Latte", category: "Oatside Series", size: "20oz", price: 114, type: "iced", coffee: false },
-  { id: 38, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "20oz", price: 124, type: "iced", coffee: true },
-  { id: 39, name: "Oatside Strawberry Mocha", category: "Oatside Series", size: "20oz", price: 124, type: "iced", coffee: true },
-  { id: 40, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "20oz", price: 124, type: "iced", coffee: true },
-  { id: 41, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "20oz", price: 124, type: "iced", coffee: false },
-  { id: 42, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "20oz", price: 134, type: "iced", coffee: true },
-  
+   
   // ================= NON-COFFEE =================
   // 16oz
   { id: 43, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 94, type: "iced", coffee: false },
@@ -81,15 +61,6 @@ const products = [
   { id: 48, name: "Blueberry Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
   { id: 49, name: "Lychee Soda", category: "Non-Coffee", size: "16oz", price: 84, type: "iced", coffee: false },
 
-  // 20oz
-  { id: 50, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "20oz", price: 104, type: "iced", coffee: false },
-  { id: 51, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "20oz", price: 104, type: "iced", coffee: false },
-  { id: 52, name: "Mixed Berries Milk Drink", category: "Non-Coffee", size: "20oz", price: 104, type: "iced", coffee: false },
-  { id: 53, name: "Strawberry Choco", category: "Non-Coffee", size: "20oz", price: 104, type: "iced", coffee: false },
-  { id: 54, name: "Green Apple Soda", category: "Non-Coffee", size: "20oz", price: 94, type: "iced", coffee: false },
-  { id: 55, name: "Blueberry Soda", category: "Non-Coffee", size: "20oz", price: 94, type: "iced", coffee: false },
-  { id: 56, name: "Lychee Soda", category: "Non-Coffee", size: "20oz", price: 94, type: "iced", coffee: false },
-
 // ================= MATCHA-COLLECTION =================
   // 16oz
   { id: 57, name: "Matcha Latte", category: "Matcha Collection", size: "16oz", price: 104, type: "iced", coffee: false },
@@ -98,14 +69,6 @@ const products = [
   { id: 60, name: "Blueberry Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
   { id: 61, name: "Mixed Berries Matcha", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
   { id: 62, name: "Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 124, type: "iced", coffee: true },
-
-  // 20oz
-  { id: 63, name: "Matcha Latte", category: "Matcha Collection", size: "16oz", price: 114, type: "iced", coffee: false },
-  { id: 64, name: "Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 124, type: "iced", coffee: true },
-  { id: 65, name: "Strawberry Matcha", category: "Matcha Collection", size: "16oz", price: 124, type: "iced", coffee: false },
-  { id: 66, name: "Blueberry Matcha", category: "Matcha Collection", size: "16oz", price: 124, type: "iced", coffee: false },
-  { id: 67, name: "Mixed Berries Matcha", category: "Matcha Collection", size: "16oz", price: 124, type: "iced", coffee: false },
-  { id: 68, name: "Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 134, type: "iced", coffee: true },
 ];
 
 /* ================= ADD ONS ================= */
