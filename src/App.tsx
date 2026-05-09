@@ -331,6 +331,22 @@ export default function App() {
 </div>
             
             <h4>Total: ₱{cartTotal}</h4>
+            {cash && (
+  <h4 style={{
+    color:
+      Number(cash) - (orderType === "delivery"
+        ? cartTotal + Number(deliveryFee || 0)
+        : cartTotal) >= 0
+        ? "green"
+        : "red"
+  }}>
+    Change: ₱
+    {Number(cash) -
+      (orderType === "delivery"
+        ? cartTotal + Number(deliveryFee || 0)
+        : cartTotal)}
+  </h4>
+)}
             <button onClick={checkout}>Checkout</button>
           </div>
         </div>
