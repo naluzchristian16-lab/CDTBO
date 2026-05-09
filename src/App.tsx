@@ -10,7 +10,7 @@ const categories = [
   "Oatside Series"
 ];
 
-/* ================= PRODUCTS ================= */
+/* ================= PRODUCTS (UNCHANGED) ================= */
 const products = [
   { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 84, type: "hot", coffee: true },
   { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 94, type: "hot", coffee: true },
@@ -57,9 +57,8 @@ const products = [
   { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true }
 ];
 
-const addons: any = {
-  "Extra Shot": 10
-};
+/* ================= ADDONS ================= */
+const addons: any = { "Extra Shot": 10 };
 
 export default function App() {
   const [view, setView] = useState<"cashier" | "kitchen" | "admin">("cashier");
@@ -87,33 +86,33 @@ export default function App() {
       .filter(g => g.items.length > 0);
   }, [baseFiltered]);
 
+  /* ================= CART ================= */
   const addToCart = (item: any) => {
     setCart(prev => {
-      const index = prev.findIndex(p => p.id === item.id && p.size === item.size);
-      if (index !== -1) {
-        const updated = [...prev];
-        updated[index].qty += 1;
-        return updated;
+      const i = prev.findIndex(p => p.id === item.id && p.size === item.size);
+      if (i !== -1) {
+        const copy = [...prev];
+        copy[i].qty += 1;
+        return copy;
       }
-      return [...prev, { ...item, qty: 1, addons: [] }];
+      return [...prev, { ...item, qty: 1 }];
     });
   };
 
-  const removeFromCart = (index: number) => {
-    setCart(prev => prev.filter((_, i) => i !== index));
-  };
+  const removeFromCart = (i: number) =>
+    setCart(prev => prev.filter((_, idx) => idx !== i));
 
   const addHot = (p: any) => addToCart({ ...p, size: "12oz" });
-  const addIced = (p: any, size: "16oz" | "20oz") => addToCart({ ...p, size });
+  const addIced = (p: any, size: string) => addToCart({ ...p, size });
 
-  const computeItemPrice = (item: any) =>
-    item.price * item.qty;
+  const compute = (i: any) => i.price * i.qty;
 
-  const cartTotal = useMemo(() =>
-    cart.reduce((sum, i) => sum + computeItemPrice(i), 0),
+  const cartTotal = useMemo(
+    () => cart.reduce((s, i) => s + compute(i), 0),
     [cart]
   );
 
+  /* ================= CHECKOUT ================= */
   const checkout = () => {
     if (!cart.length) return;
 
@@ -130,7 +129,16 @@ export default function App() {
     setCart([]);
   };
 
-  const ongoing = orders.filter(o => o.status !== "done");
+  const markDone = (id: number) => {
+    setOrders(prev =>
+      prev.map(o =>
+        o.id === id ? { ...o, status: "done" } : o
+      )
+    );
+  };
+
+  const ongoing = orders.filter(o => o.status === "ongoing");
+  const done = orders.filter(o => o.status === "done");
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
@@ -155,7 +163,6 @@ export default function App() {
       {/* CASHIER */}
       {view === "cashier" && (
         <div style={{ display: "flex", flex: 1 }}>
-          
           <div style={{ flex: 1, padding: 10 }}>
             <input
               value={search}
@@ -191,8 +198,8 @@ export default function App() {
 
             {cart.map((i, idx) => (
               <div key={idx}>
-                {i.name} x{i.qty} = ₱{computeItemPrice(i)}
-                <button onClick={() => removeFromCart(idx)}>Remove</button>
+                {i.name} x{i.qty} = ₱{compute(i)}
+                <button onClick={() => removeFromCart(idx)}>X</button>
               </div>
             ))}
 
@@ -204,12 +211,24 @@ export default function App() {
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div style={{ padding: 10 }}>
-          <h3>Kitchen</h3>
+        <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
+          <h2>Kitchen Orders</h2>
+
           {ongoing.map(o => (
-            <div key={o.id}>
+            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
               <b>Order #{o.id}</b>
-              <p>₱{o.total}</p>
+
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>
+                  {i.name} {i.size} x{i.qty}
+                </div>
+              ))}
+
+              <h4>Total: ₱{o.total}</h4>
+
+              <button onClick={() => markDone(o.id)}>
+                Mark as Done
+              </button>
             </div>
           ))}
         </div>
@@ -217,13 +236,24 @@ export default function App() {
 
       {/* ADMIN */}
       {view === "admin" && (
-        <div style={{ padding: 10 }}>
-          <h3>Admin</h3>
-          <p>Total Orders: {orders.length}</p>
-          <p>Total Sales: ₱{orders.reduce((s, o) => s + o.total, 0)}</p>
+        <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
+          <h2>Admin (Completed Orders)</h2>
+
+          {done.map(o => (
+            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
+              <b>Order #{o.id}</b>
+
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>
+                  {i.name} x{i.qty}
+                </div>
+              ))}
+
+              <h4>Total: ₱{o.total}</h4>
+            </div>
+          ))}
         </div>
       )}
-
     </div>
   );
 }
