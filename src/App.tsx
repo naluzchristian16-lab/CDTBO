@@ -151,29 +151,38 @@ export default function App() {
 
   const ongoing = orders.filter(o => o.status !== "done");
 
-  return (
+ return (
   <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
     {/* HEADER */}
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      padding: 10,
-      background: "#111",
-      color: "#fff",
-      display: "flex",
-      justifyContent: "space-between",
-      zIndex: 10
-    }}>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        padding: 10,
+        background: "#111",
+        color: "#fff",
+        display: "flex",
+        justifyContent: "space-between",
+        zIndex: 10
+      }}
+    >
       <span>Coffee D' Titos POS</span>
       <span>{new Date().toLocaleString()}</span>
     </div>
 
     {/* SIDEBAR */}
-    <div style={{ width: 220, padding: 10, paddingTop: 60, borderRight: "1px solid #ddd" }}>
-      <h3>Coffee D' Titos'</h3>
+    <div
+      style={{
+        width: 220,
+        padding: 10,
+        paddingTop: 60,
+        borderRight: "1px solid #ddd"
+      }}
+    >
+      <h3>Coffee D' Titos</h3>
 
       <button onClick={() => setView("cashier")}>Cashier</button>
       <button onClick={() => setView("kitchen")}>Kitchen</button>
@@ -181,7 +190,7 @@ export default function App() {
 
       <hr />
 
-      {categories.map(c => (
+      {categories.map((c) => (
         <button
           key={c}
           onClick={() => {
@@ -203,23 +212,28 @@ export default function App() {
     {/* ================= CASHIER ================= */}
     {view === "cashier" && (
       <>
+        {/* MAIN */}
         <div style={{ flex: 1, padding: 10, paddingTop: 60 }}>
-
           <input
             placeholder="Search..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             style={{ width: "100%", padding: 8, marginBottom: 10 }}
           />
 
-          {(search.trim() ? groupedResults : [{
-            category: category,
-            items: baseFiltered
-          }]).map((group, i) => (
+          {(search.trim()
+            ? groupedResults
+            : [
+                {
+                  category: category,
+                  items: baseFiltered
+                }
+              ]
+          ).map((group, i) => (
             <div key={i}>
               <h4>{group.category}</h4>
 
-              {group.items.map(p => (
+              {group.items.map((p) => (
                 <div key={p.id} style={{ marginBottom: 6 }}>
                   <b>{p.name}</b> ₱{p.price}
 
@@ -229,19 +243,28 @@ export default function App() {
 
                   {p.type === "iced" && (
                     <>
-                      <button onClick={() => addIced(p, "16oz")}>Malaki</button>
-                      <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
+                      <button onClick={() => addIced(p, "16oz")}>
+                        Malaki
+                      </button>
+                      <button onClick={() => addIced(p, "20oz")}>
+                        Mas Malaki
+                      </button>
                     </>
                   )}
                 </div>
               ))}
             </div>
           ))}
-
         </div>
 
         {/* CART */}
-        <div style={{ width: 300, padding: 10, borderLeft: "1px solid #ddd" }}>
+        <div
+          style={{
+            width: 300,
+            padding: 10,
+            borderLeft: "1px solid #ddd"
+          }}
+        >
           <h3>Cart</h3>
 
           {cart.map((i, idx) => (
@@ -254,6 +277,7 @@ export default function App() {
           <hr />
 
           <b>Total: ₱{cartTotal}</b>
+
           <br />
 
           <button onClick={checkout} style={{ marginTop: 10 }}>
@@ -270,8 +294,15 @@ export default function App() {
 
         {orders.length === 0 && <p>No orders yet</p>}
 
-        {orders.map(o => (
-          <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10, padding: 10 }}>
+        {orders.map((o) => (
+          <div
+            key={o.id}
+            style={{
+              border: "1px solid #ddd",
+              marginBottom: 10,
+              padding: 10
+            }}
+          >
             <b>{o.orderNumber}</b>
 
             {o.items.map((i, idx) => (
@@ -300,11 +331,20 @@ export default function App() {
 
         <hr />
 
-        {orders.map(o => (
-          <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10, padding: 10 }}>
+        {orders.map((o) => (
+          <div
+            key={o.id}
+            style={{
+              border: "1px solid #ddd",
+              marginBottom: 10,
+              padding: 10
+            }}
+          >
             <b>{o.orderNumber}</b>
 
-            <p>{o.date} {o.time}</p>
+            <p>
+              {o.date} {o.time}
+            </p>
 
             {o.items.map((i, idx) => (
               <div key={idx}>
@@ -320,22 +360,3 @@ export default function App() {
 
   </div>
 );
-
-      {/* CART */}
-      <div style={{ width: 300, padding: 10 }}>
-        <h3>Cart</h3>
-
-        {cart.map((i, idx) => (
-          <div key={idx}>
-            {i.name} x{i.qty} = ₱{computeItemPrice(i)}
-            <button onClick={() => removeFromCart(idx)}>Remove</button>
-          </div>
-        ))}
-
-        <b>Total: ₱{cartTotal}</b>
-        <button onClick={checkout}>Checkout</button>
-      </div>
-    </div>
-  )}
-  );
-}
