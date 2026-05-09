@@ -69,6 +69,7 @@ export default function App() {
 
   const normalizedSearch = search.toLowerCase().trim();
 
+  /* ================= FILTER ================= */
   const baseFiltered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
@@ -90,25 +91,50 @@ export default function App() {
   const addToCart = (item: any) => {
     setCart(prev => {
       const i = prev.findIndex(p => p.id === item.id && p.size === item.size);
+
       if (i !== -1) {
-        const copy = [...prev];
-        copy[i].qty += 1;
-        return copy;
+        const updated = [...prev];
+        updated[i].qty += 1;
+        return updated;
       }
-      return [...prev, { ...item, qty: 1 }];
+
+      return [...prev, { ...item, qty: 1, addons: [] }];
     });
   };
+
+  const addHot = (p: any) => addToCart({ ...p, size: "12oz" });
+  const addIced = (p: any, size: "16oz" | "20oz") => addToCart({ ...p, size });
 
   const removeFromCart = (i: number) =>
     setCart(prev => prev.filter((_, idx) => idx !== i));
 
-  const addHot = (p: any) => addToCart({ ...p, size: "12oz" });
-  const addIced = (p: any, size: string) => addToCart({ ...p, size });
+  const toggleExtraShot = (idx: number) => {
+    setCart(prev => {
+      const updated = [...prev];
+      const item = updated[idx];
 
-  const compute = (i: any) => i.price * i.qty;
+      if (!item.addons) item.addons = [];
 
-  const cartTotal = useMemo(
-    () => cart.reduce((s, i) => s + compute(i), 0),
+      const has = item.addons.includes("Extra Shot");
+
+      if (has) {
+        item.addons = item.addons.filter((a: string) => a !== "Extra Shot");
+      } else {
+        item.addons.push("Extra Shot");
+      }
+
+      return updated;
+    });
+  };
+
+  const computeItemPrice = (item: any) => {
+    const base = item.price * item.qty;
+    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
+    return base + addon;
+  };
+
+  const cartTotal = useMemo(() =>
+    cart.reduce((s, i) => s + computeItemPrice(i), 0),
     [cart]
   );
 
@@ -140,6 +166,7 @@ export default function App() {
   const ongoing = orders.filter(o => o.status === "ongoing");
   const done = orders.filter(o => o.status === "done");
 
+  /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
 
@@ -173,6 +200,7 @@ export default function App() {
             {(search ? groupedResults : [{ category, items: baseFiltered }]).map((g, i) => (
               <div key={i}>
                 <h4>{g.category}</h4>
+
                 {g.items.map(p => (
                   <div key={p.id}>
                     <b>{p.name}</b> ₱{p.price}
@@ -193,54 +221,44 @@ export default function App() {
             ))}
           </div>
 
-          <div style={{ width: 300 }}>
+          {/* CART */}
+          <div style={{ width: 300, padding: 10 }}>
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-  <div key={idx} style={{ marginBottom: 8 }}>
-    
-    <b>{i.name}</b>  
-    <div>₱{i.price} × {i.qty} = ₱{computeItemPrice(i)}</div>
+              <div key={idx} style={{ marginBottom: 10 }}>
+                <b>{i.name}</b>
 
-    <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
-      
-      {/* MINUS */}
-      <button
-        onClick={() => {
-          setCart(prev => {
-            const updated = [...prev];
+                <div>
+                  ₱{i.price} × {i.qty} = ₱{computeItemPrice(i)}
+                </div>
 
-            if (updated[idx].qty > 1) {
-              updated[idx].qty -= 1;
-            } else {
-              updated.splice(idx, 1); // remove if 1 na lang
-            }
+                <div style={{ display: "flex", gap: 5 }}>
+                  <button onClick={() => setCart(prev => {
+                    const u = [...prev];
+                    if (u[idx].qty > 1) u[idx].qty--;
+                    else u.splice(idx, 1);
+                    return u;
+                  })}>-</button>
 
-            return updated;
-          });
-        }}
-      >
-        -
-      </button>
+                  <span>{i.qty}</span>
 
-      <span>{i.qty}</span>
+                  <button onClick={() => setCart(prev => {
+                    const u = [...prev];
+                    u[idx].qty++;
+                    return u;
+                  })}>+</button>
+                </div>
 
-      {/* PLUS */}
-      <button
-        onClick={() => {
-          setCart(prev => {
-            const updated = [...prev];
-            updated[idx].qty += 1;
-            return updated;
-          });
-        }}
-      >
-        +
-      </button>
+                {i.coffee && (
+                  <button onClick={() => toggleExtraShot(idx)}>
+                    Extra Shot (+₱10)
+                  </button>
+                )}
 
-    </div>
-  </div>
-))}
+                <button onClick={() => removeFromCart(idx)}>Remove</button>
+              </div>
+            ))}
 
             <h4>Total: ₱{cartTotal}</h4>
             <button onClick={checkout}>Checkout</button>
@@ -250,11 +268,11 @@ export default function App() {
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
-          <h2>Kitchen Orders</h2>
+        <div style={{ flex: 1, padding: 20 }}>
+          <h2>Kitchen</h2>
 
           {ongoing.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
+            <div key={o.id}>
               <b>Order #{o.id}</b>
 
               {o.items.map((i: any, idx: number) => (
@@ -263,11 +281,9 @@ export default function App() {
                 </div>
               ))}
 
-              <h4>Total: ₱{o.total}</h4>
+              <h4>₱{o.total}</h4>
 
-              <button onClick={() => markDone(o.id)}>
-                Mark as Done
-              </button>
+              <button onClick={() => markDone(o.id)}>Done</button>
             </div>
           ))}
         </div>
@@ -275,24 +291,18 @@ export default function App() {
 
       {/* ADMIN */}
       {view === "admin" && (
-        <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
-          <h2>Admin (Completed Orders)</h2>
+        <div style={{ flex: 1, padding: 20 }}>
+          <h2>Completed Orders</h2>
 
           {done.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
+            <div key={o.id}>
               <b>Order #{o.id}</b>
-
-              {o.items.map((i: any, idx: number) => (
-                <div key={idx}>
-                  {i.name} x{i.qty}
-                </div>
-              ))}
-
-              <h4>Total: ₱{o.total}</h4>
+              <h4>₱{o.total}</h4>
             </div>
           ))}
         </div>
       )}
+
     </div>
   );
 }
