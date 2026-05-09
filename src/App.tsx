@@ -96,20 +96,23 @@ export default function App() {
   };
 
   /* ================= CART ================= */
-  const addToCart = (item) => {
-    setCart(prev => {
-      const key = `${item.id}-${item.size}-${JSON.stringify(item.addons || [])}`;
-      const existing = prev.find(p => p.key === key);
+  const addToCart = (item: any) => {
+  setCart(prev => {
+    const i = prev.findIndex(p =>
+      p.id === item.id &&
+      p.size === item.size &&
+      JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
+    );
 
-      if (existing) {
-        return prev.map(p =>
-          p.key === key ? { ...p, qty: p.qty + 1 } : p
-        );
-      }
+    if (i !== -1) {
+      const updated = [...prev];
+      updated[i].qty += 1;
+      return updated;
+    }
 
-      return [...prev, { ...item, qty: 1, addons: [], key }];
-    });
-  };
+    return [...prev, { ...item, qty: 1, addons: item.addons || [] }];
+  });
+};
 
   const addHot = (p) => addToCart({ ...p, size: "12oz" });
   const addIced = (p, size) => addToCart({ ...p, size });
@@ -275,47 +278,99 @@ export default function App() {
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div>
-          <h2>Kitchen</h2>
+  <div style={{
+    flex: 1,
+    padding: 20,
+    overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center"
+  }}>
+    <h2>Kitchen Orders</h2>
 
-          {ongoing.map(o => (
-            <div key={o.orderNumber}>
-              <b>{o.orderNumber}</b>
+    {ongoing.map(o => (
+      <div
+        key={o.orderNumber}
+        style={{
+          width: "80%",
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          padding: 15,
+          marginBottom: 15
+        }}
+      >
+        <b style={{ fontSize: 18 }}>Order #{o.orderNumber}</b>
 
-              {o.items.map((i, idx) => (
-                <div key={idx}>
-                  {i.name} {i.size} x{i.qty}
-                  {i.addons?.length > 0 && ` + ${i.addons.join(", ")}`}
+        <div style={{ marginTop: 10 }}>
+          {o.items.map((i, idx) => (
+            <div key={idx} style={{ marginBottom: 6 }}>
+              <div>
+                🍹 {i.name} ({i.size}) x{i.qty}
+              </div>
+
+              {i.addons?.length > 0 && (
+                <div style={{ fontSize: 12, color: "green" }}>
+                  + {i.addons.join(", ")}
                 </div>
-              ))}
-
-              <h4>₱{o.total}</h4>
-              <button onClick={() => markDone(o.orderNumber)}>Done</button>
+              )}
             </div>
           ))}
         </div>
-      )}
+
+        <h3 style={{ marginTop: 10 }}>₱{o.total}</h3>
+
+        <button onClick={() => markDone(o.orderNumber)}>
+          Mark as Done
+        </button>
+      </div>
+    ))}
+  </div>
+)}
 
       {/* ADMIN */}
       {view === "admin" && (
-        <div>
-          <h2>Completed Orders</h2>
+  <div style={{
+    flex: 1,
+    padding: 20,
+    overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center"
+  }}>
+    <h2>Completed Orders</h2>
 
-          {done.map(o => (
-            <div key={o.orderNumber}>
-              <b>{o.orderNumber}</b>
+    {done.map(o => (
+      <div
+        key={o.orderNumber}
+        style={{
+          width: "80%",
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          padding: 15,
+          marginBottom: 15
+        }}
+      >
+        <b style={{ fontSize: 18 }}>Order #{o.orderNumber}</b>
 
-              {o.items.map((i, idx) => (
-                <div key={idx}>
-                  {i.name} x{i.qty}
+        <div style={{ marginTop: 10 }}>
+          {o.items.map((i, idx) => (
+            <div key={idx} style={{ marginBottom: 6 }}>
+              {i.name} ({i.size}) x{i.qty}
+
+              {i.addons?.length > 0 && (
+                <div style={{ fontSize: 12, color: "green" }}>
+                  + {i.addons.join(", ")}
                 </div>
-              ))}
-
-              <h4>₱{o.total}</h4>
+              )}
             </div>
           ))}
         </div>
-      )}
+
+        <h3 style={{ marginTop: 10 }}>₱{o.total}</h3>
+      </div>
+    ))}
+  </div>
+)}
 
     </div>
   );
