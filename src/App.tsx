@@ -240,13 +240,11 @@ export default function App() {
   <h3>Cart</h3>
 
   {cart.map((i, idx) => (
-    <div key={idx} style={{ marginBottom: 12, borderBottom: "1px solid #eee", paddingBottom: 8 }}>
+    <div key={idx} style={{ marginBottom: 12 }}>
 
-      <div>
-        <b>{i.name}</b> ({i.size})
-      </div>
+      <b>{i.name}</b> ({i.size})
 
-      {/* ADDONS */}
+      {/* ADDONS DISPLAY (FIXED) */}
       {i.addons?.length > 0 && (
         <div style={{ fontSize: 12, color: "green" }}>
           + {i.addons.join(", ")}
@@ -258,32 +256,36 @@ export default function App() {
       </div>
 
       {/* QTY CONTROLS */}
-      <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 5 }}>
-        
-        <button onClick={() => setCart(prev => {
-          const c = [...prev];
-          if (c[idx].qty > 1) c[idx].qty--;
-          else c.splice(idx, 1);
-          return c;
-        })}>
-          -
-        </button>
+      <button
+        onClick={() => {
+          setCart(prev => {
+            const c = [...prev];
+            if (c[idx].qty > 1) c[idx].qty--;
+            else c.splice(idx, 1);
+            return c;
+          });
+        }}
+      >
+        -
+      </button>
 
-        <span>{i.qty}</span>
+      <span style={{ margin: "0 8px" }}>{i.qty}</span>
 
-        <button onClick={() => setCart(prev => {
-          const c = [...prev];
-          c[idx].qty++;
-          return c;
-        })}>
-          +
-        </button>
-
-      </div>
+      <button
+        onClick={() => {
+          setCart(prev => {
+            const c = [...prev];
+            c[idx].qty++;
+            return c;
+          });
+        }}
+      >
+        +
+      </button>
 
       {/* EXTRA SHOT */}
       {i.coffee && (
-        <button onClick={() => toggleExtraShot(idx)} style={{ marginTop: 5 }}>
+        <button onClick={() => toggleExtraShot(idx)} style={{ marginLeft: 8 }}>
           Extra Shot
         </button>
       )}
@@ -294,7 +296,7 @@ export default function App() {
   <h4>Total: ₱{cartTotal}</h4>
   <button onClick={checkout}>Checkout</button>
 </div>
-
+          
       {/* KITCHEN */}
       {view === "kitchen" && (
   <div style={{
