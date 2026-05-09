@@ -88,7 +88,7 @@ const products = [
   { id: 53, name: "Strawberry Choco", category: "Non-Coffee", size: "20oz", price: 104, type: "iced", coffee: false },
   { id: 54, name: "Green Apple Soda", category: "Non-Coffee", size: "20oz", price: 94, type: "iced", coffee: false },
   { id: 55, name: "Blueberry Soda", category: "Non-Coffee", size: "20oz", price: 94, type: "iced", coffee: false },
-  { id: 56, name: "Lychee Soda", category: "Non-Coffee", size: "20oz", price: 94, type: "iced", coffee: false }
+  { id: 56, name: "Lychee Soda", category: "Non-Coffee", size: "20oz", price: 94, type: "iced", coffee: false },
 
 // ================= MATCHA-COLLECTION =================
   // 16oz
