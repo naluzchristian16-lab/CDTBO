@@ -65,7 +65,10 @@ export default function App() {
   const [cart, setCart] = useState<any[]>([]);
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
-
+  const [orderType, setOrderType] = useState("dine-in"); // dine-in | take-out | delivery
+  const [deliveryFee, setDeliveryFee] = useState("");
+  const [cash, setCash] = useState("");
+  
   const baseFiltered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
@@ -143,20 +146,37 @@ export default function App() {
 
   const now = new Date();
 
+  const fee = orderType === "delivery"
+    ? Number(deliveryFee || 0)
+    : 0;
+
+  const totalWithFee = cartTotal + fee;
+  const cashPaid = Number(cash || 0);
+  const change = cashPaid - totalWithFee;
+
   const order = {
     orderNumber: generateOrderNumber(),
     date: now.toLocaleDateString(),
     time: now.toLocaleTimeString(),
     items: cart,
-    total: cartTotal,
-    status: "ongoing"
+    total: totalWithFee,
+    status: "ongoing",
+    orderType,
+    deliveryFee: fee,
+    cash: cashPaid,
+    change: change
   };
 
-  // 1. SAVE TO LOCAL STATE (cashier/kitchen/admin)
+  // 1. LOCAL STATE (kitchen + admin)
   setOrders(prev => [order, ...prev]);
   setCart([]);
 
-  // 2. SEND TO GOOGLE SHEETS API
+  // reset inputs
+  setCash("");
+  setDeliveryFee("");
+  setOrderType("dine-in");
+
+  // 2. GOOGLE SHEETS
   try {
     await fetch("/api/saveOrder", {
       method: "POST",
@@ -166,10 +186,10 @@ export default function App() {
       body: JSON.stringify(order)
     });
   } catch (err) {
-    console.error("Failed to save to Google Sheets:", err);
+    console.error("Checkout error:", err);
   }
 };
-
+  
   const markDone = (id) => {
     setOrders(prev =>
       prev.map(o =>
@@ -277,6 +297,39 @@ export default function App() {
               </div>
             ))}
 
+            {/* ORDER TYPE */}
+<div style={{ marginBottom: 10 }}>
+  <label>Order Type: </label>
+  <select
+    value={orderType}
+    onChange={(e) => setOrderType(e.target.value)}
+  >
+    <option value="dine-in">Dine-in</option>
+    <option value="take-out">Take-out</option>
+    <option value="delivery">Delivery</option>
+  </select>
+</div>
+
+{/* DELIVERY FEE */}
+{orderType === "delivery" && (
+  <div style={{ marginBottom: 10 }}>
+    <input
+      placeholder="Delivery Fee (optional)"
+      value={deliveryFee}
+      onChange={(e) => setDeliveryFee(e.target.value)}
+    />
+  </div>
+)}
+
+{/* CASH INPUT */}
+<div style={{ marginBottom: 10 }}>
+  <input
+    placeholder="Cash Received"
+    value={cash}
+    onChange={(e) => setCash(e.target.value)}
+  />
+</div>
+            
             <h4>Total: ₱{cartTotal}</h4>
             <button onClick={checkout}>Checkout</button>
           </div>
