@@ -336,5 +336,6 @@ export default function App() {
         <button onClick={checkout}>Checkout</button>
       </div>
     </div>
+  )}
   );
 }
