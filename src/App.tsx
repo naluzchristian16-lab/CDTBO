@@ -138,19 +138,37 @@ export default function App() {
 
   const cartTotal = cart.reduce((s, i) => s + computeItemPrice(i), 0);
 
-  const checkout = () => {
-    if (!cart.length) return;
+  const checkout = async () => {
+  if (!cart.length) return;
 
-    const order = {
-      orderNumber: generateOrderNumber(),
-      items: cart,
-      total: cartTotal,
-      status: "ongoing"
-    };
+  const now = new Date();
 
-    setOrders(prev => [order, ...prev]);
-    setCart([]);
+  const order = {
+    orderNumber: generateOrderNumber(),
+    date: now.toLocaleDateString(),
+    time: now.toLocaleTimeString(),
+    items: cart,
+    total: cartTotal,
+    status: "ongoing"
   };
+
+  // 1. SAVE TO LOCAL STATE (cashier/kitchen/admin)
+  setOrders(prev => [order, ...prev]);
+  setCart([]);
+
+  // 2. SEND TO GOOGLE SHEETS API
+  try {
+    await fetch("/api/saveOrder", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(order)
+    });
+  } catch (err) {
+    console.error("Failed to save to Google Sheets:", err);
+  }
+};
 
   const markDone = (id) => {
     setOrders(prev =>
