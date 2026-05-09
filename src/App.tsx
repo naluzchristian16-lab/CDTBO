@@ -296,18 +296,77 @@ export default function App() {
       )}
 
       {/* ADMIN */}
-      {view === "admin" && (
-        <div style={{ flex: 1, padding: 20, textAlign: "center" }}>
-          <h2>Completed Orders</h2>
+{view === "admin" && (
+  <div
+    style={{
+      flex: 1,
+      padding: 20,
+      overflowY: "auto",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center"
+    }}
+  >
+    <h2>Completed Orders</h2>
 
-          {done.map(o => (
-            <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
-              <b>Order #{o.orderNumber}</b>
-              <h3>₱{o.total}</h3>
+    {done.map(o => (
+      <div
+        key={o.orderNumber}
+        style={{
+          width: "80%",
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          padding: 15,
+          marginBottom: 15,
+          background: "#fafafa"
+        }}
+      >
+        {/* ORDER HEADER */}
+        <b style={{ fontSize: 18 }}>
+          Order #{o.orderNumber}
+        </b>
+
+        <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+          {o.date} • {o.time}
+        </div>
+
+        {/* ITEMS */}
+        <div style={{ marginTop: 12 }}>
+          {o.items.map((i, idx) => (
+            <div
+              key={idx}
+              style={{
+                marginBottom: 10,
+                paddingBottom: 6,
+                borderBottom: "1px dashed #ddd"
+              }}
+            >
+              <div>
+                🍹 <b>{i.name}</b> ({i.size}) x{i.qty}
+              </div>
+
+              {/* ADDONS */}
+              {i.addons?.length > 0 && (
+                <div style={{ fontSize: 12, color: "green" }}>
+                  + {i.addons.join(", ")}
+                </div>
+              )}
+
+              <div style={{ fontSize: 13 }}>
+                ₱{i.price} × {i.qty}
+              </div>
             </div>
           ))}
         </div>
-      )}
+
+        {/* TOTAL */}
+        <h3 style={{ marginTop: 10 }}>
+          Total: ₱{o.total}
+        </h3>
+      </div>
+    ))}
+  </div>
+)}
 
     </div>
   );
