@@ -183,8 +183,8 @@ export default function App() {
 
                     {p.type === "iced" && (
                       <>
-                        <button onClick={() => addIced(p, "16oz")}>16oz</button>
-                        <button onClick={() => addIced(p, "20oz")}>20oz</button>
+                        <button onClick={() => addIced(p, "16oz")}>Malaki</button>
+                        <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
                       </>
                     )}
                   </div>
