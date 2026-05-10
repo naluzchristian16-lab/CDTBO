@@ -57,7 +57,7 @@ const products = [
   { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true }
 ];
 
-/* ================= DEVICE SETUP ================= */
+/* ================= DEVICE ================= */
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
 
 export default function App() {
@@ -65,6 +65,7 @@ export default function App() {
   const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
 
   const [orders, setOrders] = useState<any[]>([]);
+  const [kitchenOrders, setKitchenOrders] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
 
   const [category, setCategory] = useState("All Products");
@@ -75,63 +76,11 @@ export default function App() {
   const [discount, setDiscount] = useState("");
   const [cash, setCash] = useState("");
 
-  const [kitchenOrders, setKitchenOrders] = useState<any[]>([]);
-
-  /* ================= OFFLINE QUEUE ================= */
-  const getQueue = () => JSON.parse(localStorage.getItem("queue") || "[]");
-
-  const saveQueue = (q: any[]) => localStorage.setItem("queue", JSON.stringify(q));
-
-  const addToQueue = (order: any) => {
-    const q = getQueue();
-    q.push(order);
-    saveQueue(q);
-  };
-
-  const syncQueue = async () => {
-    if (!navigator.onLine) return;
-
-    const q = getQueue();
-    if (!q.length) return;
-
-    const remaining = [];
-
-    for (const o of q) {
-      try {
-        await fetch("/api/saveOrder", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(o)
-        });
-      } catch {
-        remaining.push(o);
-      }
-    }
-
-    saveQueue(remaining);
-  };
-
-  useEffect(() => {
-    window.addEventListener("online", syncQueue);
-    syncQueue();
-
-    return () => window.removeEventListener("online", syncQueue);
-  }, []);
-
   /* ================= DEVICE INIT ================= */
   const initDevice = (id: string) => {
     localStorage.setItem("deviceId", id);
     setDeviceId(id);
   };
-
-  /* ================= FILTER ================= */
-  const baseFiltered = useMemo(() => {
-    return products.filter(
-      p =>
-        (category === "All Products" || p.category === category) &&
-        p.name.toLowerCase().includes(search.toLowerCase().trim())
-    );
-  }, [category, search]);
 
   /* ================= CART ================= */
   const addToCart = (item: any) => {
@@ -142,88 +91,113 @@ export default function App() {
         copy[i].qty++;
         return copy;
       }
-      return [...prev, { ...item, qty: 1 }];
+      return [...prev, { ...item, qty: 1, addons: [], size: item.size }];
     });
   };
 
-  /* ================= CHECKOUT ================= */
-  const generateOrderNumber = () => {
-    return `${deviceId}-${Date.now()}`;
+  const updateQty = (idx: number, delta: number) => {
+    setCart(prev => {
+      const copy = [...prev];
+      copy[idx].qty += delta;
+      if (copy[idx].qty <= 0) copy.splice(idx, 1);
+      return copy;
+    });
   };
 
-  const checkout = async () => {
-    if (!cart.length || !deviceId) return;
+  const toggleExtraShot = (idx: number) => {
+    setCart(prev => {
+      const copy = [...prev];
+      const item = copy[idx];
+
+      if (!item.addons) item.addons = [];
+
+      if (item.addons.includes("Extra Shot")) {
+        item.addons = item.addons.filter((a: string) => a !== "Extra Shot");
+      } else {
+        item.addons.push("Extra Shot");
+      }
+
+      return copy;
+    });
+  };
+
+  const computeItem = (item: any) => {
+    const base = item.price * item.qty;
+    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
+    return base + addon;
+  };
+
+  const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
+
+  const total = cartTotal + Number(deliveryFee || 0) - Number(discount || 0);
+  const change = cash ? Number(cash) - total : 0;
+
+  /* ================= ORDER NUMBER ================= */
+  const orderNumber = () =>
+    `${deviceId}-${Date.now()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`;
+
+  /* ================= CHECKOUT ================= */
+  const checkout = () => {
+    if (!cart.length) return;
 
     const order = {
-      orderNumber: generateOrderNumber(),
+      orderNumber: orderNumber(),
       deviceId,
       items: cart,
       orderType,
       deliveryFee: Number(deliveryFee || 0),
       discount: Number(discount || 0),
       cash: Number(cash || 0),
-      synced: false,
+      total,
+      status: "ongoing",
       createdAt: new Date().toISOString()
     };
 
     setOrders(prev => [order, ...prev]);
+    setKitchenOrders(prev => [order, ...prev]);
     setCart([]);
-
-    if (navigator.onLine) {
-      try {
-        await fetch("/api/saveOrder", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(order)
-        });
-      } catch {
-        addToQueue(order);
-      }
-    } else {
-      addToQueue(order);
-    }
 
     setCash("");
     setDiscount("");
     setDeliveryFee("");
   };
 
-  /* ================= KITCHEN SYNC (POLLING) ================= */
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch("/api/getOrders");
-        const data = await res.json();
-        setKitchenOrders(data);
-      } catch {}
-    };
+  const markDone = (id: string) => {
+    setKitchenOrders(prev =>
+      prev.map(o => o.orderNumber === id ? { ...o, status: "done" } : o)
+    );
+  };
 
-    load();
-    const interval = setInterval(load, 5000);
+  const doneOrders = kitchenOrders.filter(o => o.status === "done");
 
-    return () => clearInterval(interval);
-  }, []);
+  /* ================= FILTER ================= */
+  const baseFiltered = useMemo(() => {
+    return products.filter(
+      p => (category === "All Products" || p.category === category) &&
+      p.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [category, search]);
 
   /* ================= UI ================= */
+
   if (!deviceId) {
     return (
       <div style={{ padding: 20 }}>
-        <h2>Select Device</h2>
+        <h2>Select POS</h2>
         {DEVICE_IDS.map(id => (
-          <button key={id} onClick={() => initDevice(id)}>
-            {id}
-          </button>
+          <button key={id} onClick={() => initDevice(id)}>{id}</button>
         ))}
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", flexDirection: "row" }}>
+    <div style={{ display: "flex", height: "100vh" }}>
+
       {/* SIDEBAR */}
-      <div style={{ width: 200, padding: 10 }}>
+      <div style={{ width: 220, padding: 10 }}>
         <h3>Coffee D' Titos</h3>
-        <p>Device: {deviceId}</p>
+        <p>{deviceId}</p>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
         <button onClick={() => setView("kitchen")}>Kitchen</button>
@@ -232,15 +206,14 @@ export default function App() {
         <hr />
 
         {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>
-            {c}
-          </button>
+          <button key={c} onClick={() => setCategory(c)}>{c}</button>
         ))}
       </div>
 
       {/* CASHIER */}
       {view === "cashier" && (
         <div style={{ flex: 1, display: "flex" }}>
+
           <div style={{ flex: 1, padding: 10 }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search" />
 
@@ -252,14 +225,51 @@ export default function App() {
             ))}
           </div>
 
-          <div style={{ width: 300, padding: 10 }}>
+          {/* CART */}
+          <div style={{ width: 320, padding: 10 }}>
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx}>{i.name} x{i.qty}</div>
+              <div key={idx} style={{ marginBottom: 10 }}>
+                <b>{i.name}</b> ({i.size})
+
+                <div>
+                  Qty: {i.qty}
+                  <button onClick={() => updateQty(idx, -1)}>-</button>
+                  <button onClick={() => updateQty(idx, 1)}>+</button>
+                </div>
+
+                <div>
+                  ₱{i.price} x {i.qty} = ₱{computeItem(i)}
+                </div>
+
+                <button onClick={() => toggleExtraShot(idx)}>Extra Shot</button>
+
+                {i.addons?.length > 0 && (
+                  <div style={{ color: "green" }}>
+                    + {i.addons.join(", ")}
+                  </div>
+                )}
+              </div>
             ))}
 
-            <h4>Total Items: {cart.length}</h4>
+            <hr />
+
+            <select value={orderType} onChange={e => setOrderType(e.target.value)}>
+              <option value="dine-in">Dine-in</option>
+              <option value="take-out">Take-out</option>
+              <option value="delivery">Delivery</option>
+            </select>
+
+            {orderType === "delivery" && (
+              <input placeholder="Delivery Fee" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} />
+            )}
+
+            <input placeholder="Discount" value={discount} onChange={e => setDiscount(e.target.value)} />
+            <input placeholder="Cash" value={cash} onChange={e => setCash(e.target.value)} />
+
+            <h3>Total: ₱{total}</h3>
+            {cash && <h4 style={{ color: change >= 0 ? "green" : "red" }}>Change: ₱{change}</h4>}
 
             <button onClick={checkout}>Checkout</button>
           </div>
@@ -269,16 +279,20 @@ export default function App() {
       {/* KITCHEN */}
       {view === "kitchen" && (
         <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen (Live)</h2>
+          <h2>Kitchen</h2>
 
-          {kitchenOrders.map((o, i) => (
-            <div key={i} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+          {kitchenOrders.map(o => (
+            <div key={o.orderNumber} style={{ border: "1px solid #ccc", padding: 10, margin: 10 }}>
               <b>{o.orderNumber}</b>
-              <p>Device: {o.deviceId}</p>
+              <p>{o.orderType}</p>
 
-              {o.items?.map((it: any, idx: number) => (
-                <div key={idx}>{it.name} x{it.qty}</div>
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>{i.name} x{i.qty}</div>
               ))}
+
+              <h3>₱{o.total}</h3>
+
+              <button onClick={() => markDone(o.orderNumber)}>Done</button>
             </div>
           ))}
         </div>
@@ -287,10 +301,22 @@ export default function App() {
       {/* ADMIN */}
       {view === "admin" && (
         <div style={{ flex: 1, padding: 20 }}>
-          <h2>Admin</h2>
-          <p>Total Orders: {orders.length}</p>
+          <h2>Completed Orders</h2>
+
+          {doneOrders.map(o => (
+            <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
+              <b>{o.orderNumber}</b>
+
+              {o.items.map((i: any, idx: number) => (
+                <div key={idx}>{i.name} x{i.qty}</div>
+              ))}
+
+              <h3>Total: ₱{o.total}</h3>
+            </div>
+          ))}
         </div>
       )}
+
     </div>
   );
 }
