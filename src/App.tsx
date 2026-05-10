@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 /* ================= CATEGORIES ================= */
 const categories = [
@@ -57,10 +57,16 @@ const products = [
   { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 124, type: "iced", coffee: true }
 ];
 
+/* ================= DEVICE SETUP ================= */
+const DEVICE_IDS = ["POS1", "POS2", "POS3"];
+
 export default function App() {
   const [view, setView] = useState("cashier");
+  const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
+
   const [orders, setOrders] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
+
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
 
@@ -69,6 +75,56 @@ export default function App() {
   const [discount, setDiscount] = useState("");
   const [cash, setCash] = useState("");
 
+  const [kitchenOrders, setKitchenOrders] = useState<any[]>([]);
+
+  /* ================= OFFLINE QUEUE ================= */
+  const getQueue = () => JSON.parse(localStorage.getItem("queue") || "[]");
+
+  const saveQueue = (q: any[]) => localStorage.setItem("queue", JSON.stringify(q));
+
+  const addToQueue = (order: any) => {
+    const q = getQueue();
+    q.push(order);
+    saveQueue(q);
+  };
+
+  const syncQueue = async () => {
+    if (!navigator.onLine) return;
+
+    const q = getQueue();
+    if (!q.length) return;
+
+    const remaining = [];
+
+    for (const o of q) {
+      try {
+        await fetch("/api/saveOrder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(o)
+        });
+      } catch {
+        remaining.push(o);
+      }
+    }
+
+    saveQueue(remaining);
+  };
+
+  useEffect(() => {
+    window.addEventListener("online", syncQueue);
+    syncQueue();
+
+    return () => window.removeEventListener("online", syncQueue);
+  }, []);
+
+  /* ================= DEVICE INIT ================= */
+  const initDevice = (id: string) => {
+    localStorage.setItem("deviceId", id);
+    setDeviceId(id);
+  };
+
+  /* ================= FILTER ================= */
   const baseFiltered = useMemo(() => {
     return products.filter(
       p =>
@@ -77,153 +133,97 @@ export default function App() {
     );
   }, [category, search]);
 
-  const groupedResults = useMemo(() => {
-    return categories
-      .filter(c => c !== "All Products")
-      .map(c => ({
-        category: c,
-        items: baseFiltered.filter(p => p.category === c)
-      }))
-      .filter(g => g.items.length > 0);
-  }, [baseFiltered]);
-
-  const generateOrderNumber = () => {
-    const d = new Date();
-    return (
-      String(d.getMonth() + 1).padStart(2, "0") +
-      String(d.getDate()).padStart(2, "0") +
-      String(d.getFullYear()).slice(-2) +
-      String(orders.length + 1).padStart(4, "0")
-    );
-  };
-
+  /* ================= CART ================= */
   const addToCart = (item: any) => {
     setCart(prev => {
-      const i = prev.findIndex(
-        p =>
-          p.id === item.id &&
-          p.size === item.size &&
-          JSON.stringify(p.addons || []) === JSON.stringify(item.addons || [])
-      );
-
+      const i = prev.findIndex(p => p.id === item.id && p.size === item.size);
       if (i !== -1) {
         const copy = [...prev];
         copy[i].qty++;
         return copy;
       }
-
-      return [...prev, { ...item, qty: 1, addons: item.addons || [] }];
+      return [...prev, { ...item, qty: 1 }];
     });
   };
 
-  const addHot = (p: any) => addToCart({ ...p, size: "12oz" });
-  const addIced = (p: any, size: string) =>
-  addToCart({
-    ...p,
-    size,
-    price: size === "20oz" ? p.price + 10 : p.price
-  });
-
-  const toggleExtraShot = (idx: number) => {
-    setCart(prev => {
-      const copy = [...prev];
-      const current = copy[idx];
-
-      const updatedAddons = current.addons?.includes("Extra Shot")
-        ? current.addons.filter((a: string) => a !== "Extra Shot")
-        : [...(current.addons || []), "Extra Shot"];
-
-      const existing = copy.findIndex(
-        (p, i) =>
-          i !== idx &&
-          p.id === current.id &&
-          p.size === current.size &&
-          JSON.stringify(p.addons || []) === JSON.stringify(updatedAddons)
-      );
-
-      if (existing !== -1) {
-        copy[existing].qty += current.qty;
-        copy.splice(idx, 1);
-        return copy;
-      }
-
-      copy[idx] = {
-        ...current,
-        addons: updatedAddons
-      };
-
-      return copy;
-    });
+  /* ================= CHECKOUT ================= */
+  const generateOrderNumber = () => {
+    return `${deviceId}-${Date.now()}`;
   };
-
-  const computeItemPrice = (item: any) => {
-    const base = item.price * item.qty;
-    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
-    return base + addon;
-  };
-
-  const cartTotal = cart.reduce((s, i) => s + computeItemPrice(i), 0);
-
-  const fee = orderType === "delivery" ? Number(deliveryFee || 0) : 0;
-  const discountValue = Number(discount || 0);
-  const totalWithFee = cartTotal + fee - discountValue;
-  const cashPaid = Number(cash || 0);
-  const change = cash ? cashPaid - totalWithFee : 0;
 
   const checkout = async () => {
-    if (!cart.length) return;
-
-    const now = new Date();
+    if (!cart.length || !deviceId) return;
 
     const order = {
       orderNumber: generateOrderNumber(),
-      date: now.toLocaleDateString(),
-      time: now.toLocaleTimeString(),
+      deviceId,
       items: cart,
-      total: totalWithFee,
-      status: "ongoing",
       orderType,
-      deliveryFee: fee,
-      discount: discountValue,
-      cash: cashPaid,
-      change
+      deliveryFee: Number(deliveryFee || 0),
+      discount: Number(discount || 0),
+      cash: Number(cash || 0),
+      synced: false,
+      createdAt: new Date().toISOString()
     };
 
     setOrders(prev => [order, ...prev]);
     setCart([]);
 
-    setOrderType("dine-in");
-    setDeliveryFee("");
-    setDiscount("");
-    setCash("");
-
-    try {
-      await fetch("/api/saveOrder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(order)
-      });
-    } catch (err) {
-      console.error(err);
+    if (navigator.onLine) {
+      try {
+        await fetch("/api/saveOrder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(order)
+        });
+      } catch {
+        addToQueue(order);
+      }
+    } else {
+      addToQueue(order);
     }
+
+    setCash("");
+    setDiscount("");
+    setDeliveryFee("");
   };
 
-  const markDone = (id: string) => {
-    setOrders(prev =>
-      prev.map(o =>
-        o.orderNumber === id ? { ...o, status: "done" } : o
-      )
+  /* ================= KITCHEN SYNC (POLLING) ================= */
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/getOrders");
+        const data = await res.json();
+        setKitchenOrders(data);
+      } catch {}
+    };
+
+    load();
+    const interval = setInterval(load, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  /* ================= UI ================= */
+  if (!deviceId) {
+    return (
+      <div style={{ padding: 20 }}>
+        <h2>Select Device</h2>
+        {DEVICE_IDS.map(id => (
+          <button key={id} onClick={() => initDevice(id)}>
+            {id}
+          </button>
+        ))}
+      </div>
     );
-  };
-
-  const ongoing = orders.filter(o => o.status === "ongoing");
-  const done = orders.filter(o => o.status === "done");
+  }
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={{ display: "flex", height: "100vh", flexDirection: "row" }}>
       {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10 }}>
+      <div style={{ width: 200, padding: 10 }}>
         <h3>Coffee D' Titos</h3>
+        <p>Device: {deviceId}</p>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
         <button onClick={() => setView("kitchen")}>Kitchen</button>
@@ -232,151 +232,34 @@ export default function App() {
         <hr />
 
         {categories.map(c => (
-          <div key={c}>
-            <button onClick={() => setCategory(c)}>{c}</button>
-          </div>
+          <button key={c} onClick={() => setCategory(c)}>
+            {c}
+          </button>
         ))}
       </div>
 
       {/* CASHIER */}
       {view === "cashier" && (
-        <div style={{ display: "flex", flex: 1 }}>
-          {/* MENU */}
+        <div style={{ flex: 1, display: "flex" }}>
           <div style={{ flex: 1, padding: 10 }}>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search"
-            />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search" />
 
-            {(search
-              ? groupedResults
-              : [{ category, items: baseFiltered }]
-            ).map((g: any, i: number) => (
-              <div key={i}>
-                <h4>{g.category}</h4>
-
-                {g.items.map((p: any) => (
-                  <div key={p.id}>
-                    {p.name} ₱{p.price}
-
-                    {p.type === "hot" && (
-                      <button onClick={() => addHot(p)}>Add</button>
-                    )}
-
-                    {p.type === "iced" && (
-                      <>
-                        <button onClick={() => addIced(p, "16oz")}>Malaki</button>
-                        <button onClick={() => addIced(p, "20oz")}>Mas Malaki</button>
-                      </>
-                    )}
-                  </div>
-                ))}
+            {baseFiltered.map(p => (
+              <div key={p.id}>
+                {p.name} ₱{p.price}
+                <button onClick={() => addToCart(p)}>Add</button>
               </div>
             ))}
           </div>
 
-          {/* CART */}
-          <div style={{ width: 320, padding: 10 }}>
+          <div style={{ width: 300, padding: 10 }}>
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 12 }}>
-                <b>{i.name}</b> ({i.size})
-
-                {i.addons?.length > 0 && (
-                  <div style={{ fontSize: 12, color: "green" }}>
-                    + {i.addons.join(", ")}
-                  </div>
-                )}
-
-                <div>
-                  ₱{i.price} x {i.qty} = ₱{computeItemPrice(i)}
-                </div>
-
-                <button
-                  onClick={() =>
-                    setCart(prev => {
-                      const c = [...prev];
-                      if (c[idx].qty > 1) c[idx].qty--;
-                      else c.splice(idx, 1);
-                      return c;
-                    })
-                  }
-                >
-                  -
-                </button>
-
-                <span style={{ margin: "0 8px" }}>{i.qty}</span>
-
-                <button
-                  onClick={() =>
-                    setCart(prev => {
-                      const c = [...prev];
-                      c[idx].qty++;
-                      return c;
-                    })
-                  }
-                >
-                  +
-                </button>
-
-                {i.coffee && (
-                  <button
-                    onClick={() => toggleExtraShot(idx)}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Extra Shot
-                  </button>
-                )}
-              </div>
+              <div key={idx}>{i.name} x{i.qty}</div>
             ))}
 
-            <div style={{ marginBottom: 8 }}>
-              <label>Order Type: </label>
-              <select
-                value={orderType}
-                onChange={e => setOrderType(e.target.value)}
-              >
-                <option value="dine-in">Dine-in</option>
-                <option value="take-out">Take-out</option>
-                <option value="delivery">Delivery</option>
-              </select>
-            </div>
-
-            {orderType === "delivery" && (
-              <div style={{ marginBottom: 8 }}>
-                <input
-                  placeholder="Delivery Fee"
-                  value={deliveryFee}
-                  onChange={e => setDeliveryFee(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div style={{ marginBottom: 8 }}>
-              <input
-                placeholder="Discount"
-                value={discount}
-                onChange={e => setDiscount(e.target.value)}
-              />
-            </div>
-
-            <div style={{ marginBottom: 8 }}>
-              <input
-                placeholder="Cash Received"
-                value={cash}
-                onChange={e => setCash(e.target.value)}
-              />
-            </div>
-
-            <h4>Total: ₱{totalWithFee}</h4>
-
-            {cash && (
-              <h4 style={{ color: change >= 0 ? "green" : "red" }}>
-                Change: ₱{change}
-              </h4>
-            )}
+            <h4>Total Items: {cart.length}</h4>
 
             <button onClick={checkout}>Checkout</button>
           </div>
@@ -385,32 +268,17 @@ export default function App() {
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20, textAlign: "center" }}>
-          <h2>Kitchen</h2>
+        <div style={{ flex: 1, padding: 20 }}>
+          <h2>Kitchen (Live)</h2>
 
-          {ongoing.map(o => (
-            <div
-              key={o.orderNumber}
-              style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}
-            >
-              <b>Order #{o.orderNumber}</b>
+          {kitchenOrders.map((o, i) => (
+            <div key={i} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+              <b>{o.orderNumber}</b>
+              <p>Device: {o.deviceId}</p>
 
-              {o.items.map((i: any, idx: number) => (
-                <div key={idx}>
-                  {i.name} ({i.size}) x{i.qty}
-                  {i.addons?.length > 0 && (
-                    <div style={{ fontSize: 12, color: "green" }}>
-                      + {i.addons.join(", ")}
-                    </div>
-                  )}
-                </div>
+              {o.items?.map((it: any, idx: number) => (
+                <div key={idx}>{it.name} x{it.qty}</div>
               ))}
-
-              <h3>₱{o.total}</h3>
-
-              <button onClick={() => markDone(o.orderNumber)}>
-                Done
-              </button>
             </div>
           ))}
         </div>
@@ -418,52 +286,9 @@ export default function App() {
 
       {/* ADMIN */}
       {view === "admin" && (
-        <div
-          style={{
-            flex: 1,
-            padding: 20,
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center"
-          }}
-        >
-          <h2>Completed Orders</h2>
-
-          {done.map(o => (
-            <div
-              key={o.orderNumber}
-              style={{
-                width: "80%",
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                padding: 15,
-                marginBottom: 15
-              }}
-            >
-              <b style={{ fontSize: 18 }}>Order #{o.orderNumber}</b>
-
-              <div style={{ fontSize: 12, marginTop: 4 }}>
-                {o.date} • {o.time}
-              </div>
-
-              <div style={{ marginTop: 10 }}>
-                {o.items.map((i: any, idx: number) => (
-                  <div key={idx} style={{ marginBottom: 8 }}>
-                    🍹 <b>{i.name}</b> ({i.size}) x{i.qty}
-
-                    {i.addons?.length > 0 && (
-                      <div style={{ fontSize: 12, color: "green" }}>
-                        + {i.addons.join(", ")}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <h3>Total: ₱{o.total}</h3>
-            </div>
-          ))}
+        <div style={{ flex: 1, padding: 20 }}>
+          <h2>Admin</h2>
+          <p>Total Orders: {orders.length}</p>
         </div>
       )}
     </div>
