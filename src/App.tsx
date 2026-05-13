@@ -329,8 +329,32 @@ useEffect(() => {
               <p>{o.orderType}</p>
 
               {o.items.map((i: any, idx: number) => (
-                <div key={idx}>{i.name} x{i.qty}</div>
-              ))}
+  <div
+    key={idx}
+    style={{
+      marginBottom: 6,
+      padding: 6,
+      borderBottom: "1px dashed #ddd"
+    }}
+  >
+    <div>
+      <b>{i.name}</b> x{i.qty}
+    </div>
+
+    <div style={{ fontSize: 12, color: "#444" }}>
+      Size: <b>{i.size}</b>
+      {i.sizeExtra > 0 && (
+        <span> (+₱{i.sizeExtra} per item)</span>
+      )}
+    </div>
+
+    {i.addons?.length > 0 && (
+      <div style={{ fontSize: 12, color: "green" }}>
+        Add-ons: {i.addons.join(", ")}
+      </div>
+    )}
+  </div>
+))}
 
               <h3>₱{o.total}</h3>
 
