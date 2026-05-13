@@ -63,34 +63,34 @@ export default function App() {
   };
 
   /* ================= CART ================= */
-  const addToCart = (item, sizeType, sizeExtra = 0) => {
-    setCart(prev => {
-      const addonKey = (addons = []) => addons.sort().join("|");
+  const makeKey = (item) => {
+  const addons = item.addons ? [...item.addons].sort().join("|") : "";
+  return `${item.id}-${item.sizeType}-${addons}`;
+};
 
-const i = prev.findIndex(p =>
-  p.id === item.id &&
-  p.sizeType === sizeType &&
-  addonKey(p.addons) === addonKey([])
-);
+const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
+  setCart(prev => {
+    const newItem = {
+      ...item,
+      qty: 1,
+      sizeType,
+      sizeExtra,
+      addons: [...addons]
+    };
 
-      if (i !== -1) {
-        const copy = [...prev];
-        copy[i].qty += 1;
-        return copy;
-      }
+    const newKey = makeKey(newItem);
 
-      return [
-        ...prev,
-        {
-          ...item,
-          qty: 1,
-          sizeType,
-          sizeExtra,
-          addons: []
-        }
-      ];
-    });
-  };
+    const i = prev.findIndex(p => makeKey(p) === newKey);
+
+    if (i !== -1) {
+      const copy = [...prev];
+      copy[i].qty += 1;
+      return copy;
+    }
+
+    return [...prev, newItem];
+  });
+};
 
   const updateQty = (idx, delta) => {
     setCart(prev => {
