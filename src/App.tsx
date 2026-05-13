@@ -5,12 +5,16 @@ import {
   addDoc,
   onSnapshot,
   updateDoc,
-  doc,
-  setDoc
+  doc
 } from "firebase/firestore";
-import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
-/* ================= PRODUCTS (HINDI BINAWASAN) ================= */
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "firebase/auth";
+
+/* ================= PRODUCTS (NO CUT) ================= */
 const categories = [
   "All Products",
   "Hot Drinks",
@@ -32,9 +36,21 @@ const products = [
 
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
 
-export default function App() {
-  const [user, setUser] = useState(null);
+/* ================= ROLES ================= */
+const roles = {
+  "admin@cafe.com": "admin",
+  "cashier@cafe.com": "cashier"
+};
 
+export default function App() {
+  /* AUTH */
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState("");
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  /* POS */
   const [view, setView] = useState("cashier");
   const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
 
@@ -50,18 +66,22 @@ export default function App() {
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
 
-  /* ================= LOGIN ================= */
+  /* ================= LOGIN LISTENER ================= */
   useEffect(() => {
-    signInAnonymously(auth);
-
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
+
+      if (u?.email && roles[u.email]) {
+        setRole(roles[u.email]);
+      } else {
+        setRole("cashier");
+      }
     });
 
     return () => unsub();
   }, []);
 
-  /* ================= REALTIME FIREBASE ================= */
+  /* ================= FIREBASE REALTIME ================= */
   useEffect(() => {
     const unsubOrders = onSnapshot(collection(db, "orders"), (snap) => {
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -77,6 +97,17 @@ export default function App() {
     };
   }, []);
 
+  /* ================= LOGIN ================= */
+  const login = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch {
+      alert("Login failed");
+    }
+  };
+
+  const logout = () => signOut(auth);
+
   /* ================= DEVICE ================= */
   const initDevice = (id) => {
     localStorage.setItem("deviceId", id);
@@ -84,8 +115,8 @@ export default function App() {
   };
 
   /* ================= CART ================= */
-  const makeKey = (item) =>
-    `${item.id}-${item.sizeType}-${item.sizeExtra}-${(item.addons || []).join("|")}`;
+  const makeKey = (i) =>
+    `${i.id}-${i.sizeType}-${i.sizeExtra}-${(i.addons || []).join("|")}`;
 
   const addToCart = (item, sizeType, sizeExtra = 0) => {
     setCart(prev => {
@@ -129,10 +160,10 @@ export default function App() {
   };
 
   /* ================= TOTAL ================= */
-  const computeItem = (item) => {
-    const base = item.price * item.qty;
-    const size = (item.sizeExtra || 0) * item.qty;
-    const addon = (item.addons?.includes("Extra Shot") ? 10 : 0) * item.qty;
+  const computeItem = (i) => {
+    const base = i.price * i.qty;
+    const size = (i.sizeExtra || 0) * i.qty;
+    const addon = (i.addons?.includes("Extra Shot") ? 10 : 0) * i.qty;
     return base + size + addon;
   };
 
@@ -141,7 +172,7 @@ export default function App() {
   const total = cartTotal + Number(deliveryFee || 0) - Number(discount || 0);
   const change = cash ? Number(cash) - total : 0;
 
-  /* ================= CHECKOUT (REALTIME FIREBASE WRITE) ================= */
+  /* ================= CHECKOUT ================= */
   const checkout = async () => {
     if (!cart.length) return;
 
@@ -157,8 +188,8 @@ export default function App() {
       createdAt: Date.now()
     };
 
-    await addDoc(collection(db, "orders"), order);
-    await addDoc(collection(db, "kitchenOrders"), order);
+    const ref = await addDoc(collection(db, "orders"), order);
+    await addDoc(collection(db, "kitchenOrders"), { ...order, id: ref.id });
 
     setCart([]);
     setCash("");
@@ -166,13 +197,10 @@ export default function App() {
     setDeliveryFee("");
   };
 
-  /* ================= DONE STATUS ================= */
+  /* ================= DONE ================= */
   const markDone = async (id) => {
-    const ref1 = doc(db, "orders", id);
-    const ref2 = doc(db, "kitchenOrders", id);
-
-    await updateDoc(ref1, { status: "done" });
-    await updateDoc(ref2, { status: "done" });
+    await updateDoc(doc(db, "orders", id), { status: "done" });
+    await updateDoc(doc(db, "kitchenOrders", id), { status: "done" });
   };
 
   const filtered = useMemo(() => {
@@ -183,7 +211,18 @@ export default function App() {
   }, [category, search]);
 
   /* ================= LOGIN SCREEN ================= */
-  if (!user) return <h2>Loading POS...</h2>;
+  if (!user) {
+    return (
+      <div style={{ padding: 20 }}>
+        <h2>POS LOGIN</h2>
+
+        <input placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
+        <input placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+
+        <button onClick={login}>Login</button>
+      </div>
+    );
+  }
 
   if (!deviceId) {
     return (
@@ -201,14 +240,19 @@ export default function App() {
   /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      
+
       {/* SIDEBAR */}
       <div style={{ width: 220 }}>
         <h3>POS</h3>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
+
+        {role === "admin" && (
+          <button onClick={() => setView("admin")}>Admin</button>
+        )}
+
         <button onClick={() => setView("kitchen")}>Kitchen</button>
-        <button onClick={() => setView("admin")}>Admin</button>
+        <button onClick={logout}>Logout</button>
 
         <hr />
 
@@ -222,7 +266,6 @@ export default function App() {
       {/* CASHIER */}
       {view === "cashier" && (
         <div style={{ display: "flex", flex: 1 }}>
-          
           <div style={{ flex: 1 }}>
             {filtered.map(p => (
               <div key={p.id}>
@@ -232,7 +275,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* CART */}
           <div style={{ width: 300 }}>
             {cart.map((i, idx) => (
               <div key={idx}>
@@ -251,30 +293,26 @@ export default function App() {
       {/* KITCHEN */}
       {view === "kitchen" && (
         <div>
-          {kitchenOrders
-            .filter(o => o.status !== "done")
-            .map(o => (
-              <div key={o.id}>
-                <b>{o.id}</b>
-                <button onClick={() => markDone(o.id)}>Done</button>
-              </div>
-            ))}
+          {kitchenOrders.filter(o => o.status !== "done").map(o => (
+            <div key={o.id}>
+              {o.id}
+              <button onClick={() => markDone(o.id)}>Done</button>
+            </div>
+          ))}
         </div>
       )}
 
       {/* ADMIN */}
-      {view === "admin" && (
+      {view === "admin" && role === "admin" && (
         <div>
-          {orders
-            .filter(o => o.status === "done")
-            .map(o => (
-              <div key={o.id}>
-                <b>{o.id}</b>
-                <div>Total: ₱{o.total}</div>
-              </div>
-            ))}
+          {orders.filter(o => o.status === "done").map(o => (
+            <div key={o.id}>
+              {o.id} - ₱{o.total}
+            </div>
+          ))}
         </div>
       )}
+
     </div>
   );
 }
