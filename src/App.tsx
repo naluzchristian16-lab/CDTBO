@@ -265,26 +265,34 @@ export default function App() {
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx}>
-                <b>{i.name}</b>
+  <div key={idx} style={{ marginBottom: 10, border: "1px solid #eee", padding: 8 }}>
+    
+    <b>{i.name}</b>
 
-                <div>
-                  Qty: {i.qty}
-                  <button onClick={() => updateQty(idx, -1)}>-</button>
-                  <button onClick={() => updateQty(idx, 1)}>+</button>
-                </div>
+    <div style={{ fontSize: 12, color: "#555" }}>
+      Size: {i.sizeType}
+      {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
+    </div>
 
-                <div>₱{computeItem(i)}</div>
+    <div>
+      Qty: {i.qty}
+      <button onClick={() => updateQty(idx, -1)}>-</button>
+      <button onClick={() => updateQty(idx, 1)}>+</button>
+    </div>
 
-                <button onClick={() => toggleExtraShot(idx)}>
-                  Extra Shot
-                </button>
+    {i.addons?.length > 0 && (
+      <div style={{ color: "green", fontSize: 12 }}>
+        Add-ons: {i.addons.join(", ")}
+      </div>
+    )}
 
-                {i.addons?.length > 0 && (
-                  <div>+ {i.addons.join(", ")}</div>
-                )}
-              </div>
-            ))}
+    <div>₱{computeItem(i)}</div>
+
+    <button onClick={() => toggleExtraShot(idx)}>
+      Extra Shot
+    </button>
+  </div>
+))}
 
             <hr />
 
@@ -334,10 +342,22 @@ export default function App() {
                 <b>{o.orderNumber}</b>
 
                 {o.items.map((i, idx) => (
-                  <div key={idx}>
-                    {i.name} x{i.qty}
-                  </div>
-                ))}
+  <div key={idx} style={{ marginBottom: 8 }}>
+    
+    <b>{i.name}</b> x{i.qty}
+
+    <div style={{ fontSize: 12, color: "#555" }}>
+      Size: {i.sizeType}
+      {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
+    </div>
+
+    {i.addons?.length > 0 && (
+      <div style={{ fontSize: 12, color: "green" }}>
+        Add-ons: {i.addons.join(", ")}
+      </div>
+    )}
+  </div>
+))}
 
                 <button onClick={() => markDone(o.orderNumber)}>
                   Done
@@ -359,10 +379,21 @@ export default function App() {
 
               <div style={{ background: "#f5f5f5", padding: 8 }}>
                 {o.items.map((i, idx) => (
-                  <div key={idx}>
-                    {i.name} x{i.qty} ({i.sizeType})
-                  </div>
-                ))}
+  <div key={idx} style={{ marginBottom: 6 }}>
+    <b>{i.name}</b> x{i.qty}
+
+    <div style={{ fontSize: 12, color: "#555" }}>
+      Size: {i.sizeType}
+      {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
+    </div>
+
+    {i.addons?.length > 0 && (
+      <div style={{ fontSize: 12, color: "green" }}>
+        Add-ons: {i.addons.join(", ")}
+      </div>
+    )}
+  </div>
+))}
               </div>
 
               {o.orderType === "delivery" && (
