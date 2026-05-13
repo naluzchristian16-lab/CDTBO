@@ -161,12 +161,18 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
   };
 
   const markDone = (id) => {
-    setKitchenOrders(prev =>
-      prev.map(o =>
-        o.orderNumber === id ? { ...o, status: "done" } : o
-      )
-    );
-  };
+  setKitchenOrders(prev =>
+    prev.map(o =>
+      o.orderNumber === id ? { ...o, status: "done" } : o
+    )
+  );
+
+  setOrders(prev =>
+    prev.map(o =>
+      o.orderNumber === id ? { ...o, status: "done" } : o
+    )
+  );
+};
 
   const filtered = useMemo(() => {
     return products.filter(p =>
