@@ -27,27 +27,49 @@ const categories = [
 
 /* ================= PRODUCTS ================= */
 const products = [
-  { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69 },
-  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79 },
-  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79 },
-  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89 },
-  { id: 5, name: "Hot Vanilla Latte", category: "Hot Drinks", size: "12oz", price: 79 },
+  { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69, type: "hot", coffee: true },
+  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: true },
+  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: true },
+  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
+  { id: 5, name: "Hot Strawberry Latte", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
+  { id: 6, name: "Hot Strawberry Mocha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
+  { id: 7, name: "Hot Matcha Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: false },
+  { id: 8, name: "Hot Strawberry Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: false },
+  { id: 9, name: "Hot Strawberry Dirty Matcha", category: "Hot Drinks", size: "12oz", price: 99, type: "hot", coffee: true },
+  { id: 10, name: "Hot Blueberry Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: false },
 
-  { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 79 },
-  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89 },
-  { id: 13, name: "Iced Mocha", category: "Iced Coffee", size: "16oz", price: 89 },
-  { id: 14, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "16oz", price: 99 },
-  { id: 15, name: "Iced Vanilla Latte", category: "Iced Coffee", size: "16oz", price: 89 },
+  { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 79, type: "iced", coffee: true },
+  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89, type: "iced", coffee: true },
+  { id: 13, name: "Iced Mocha", category: "Iced Coffee", size: "16oz", price: 89, type: "iced", coffee: true },
+  { id: 14, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
+  { id: 15, name: "Iced Ube Macchiato", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
+  { id: 16, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
+  { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
 
-  { id: 21, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79 },
-  { id: 22, name: "Lychee Soda", category: "Non-Coffee", size: "16oz", price: 69 },
-  { id: 23, name: "Blue Lemonade", category: "Non-Coffee", size: "16oz", price: 69 },
+  { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
+  { id: 19, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
+  { id: 20, name: "Mixed Berries Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
+  { id: 21, name: "Strawberry Choco", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
+  { id: 22, name: "Green Apple Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
+  { id: 23, name: "Blueberry Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
+  { id: 24, name: "Lychee Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
 
-  { id: 31, name: "Iced Matcha Latte", category: "Matcha Collection", size: "16oz", price: 89 },
-  { id: 32, name: "Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 99 },
+  { id: 25, name: "Iced Matcha Latte", category: "Matcha Collection", size: "16oz", price: 89, type: "iced", coffee: false },
+  { id: 26, name: "Iced Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: true },
+  { id: 27, name: "Iced Strawberry Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
+  { id: 28, name: "Iced Blueberry Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
+  { id: 29, name: "Iced Mixed Berries Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
+  { id: 30, name: "Iced Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 109, type: "iced", coffee: true },
 
-  { id: 41, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 109 },
-  { id: 42, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 109 }
+  { id: 31, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: true },
+  { id: 32, name: "Oatside Mocha", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: true },
+  { id: 33, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
+  { id: 34, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: false },
+  { id: 35, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: false },
+  { id: 36, name: "Oatside Strawberry Mocha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
+  { id: 37, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
+  { id: 38, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: false },
+  { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 109, type: "iced", coffee: true }
 ];
 
 /* ================= DEVICES ================= */
@@ -591,13 +613,15 @@ export default function App() {
                   ₱{computeItem(i)}
                 </div>
 
-                <button
-                  onClick={() =>
-                    toggleExtraShot(idx)
-                  }
-                >
-                  Extra Shot
-                </button>
+                {i.Coffee && (
+  <button
+    onClick={() =>
+      toggleExtraShot(idx)
+    }
+  >
+    Extra Shot
+  </button>
+)}
 
               </div>
 
