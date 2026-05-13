@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { db } from "./firebase";
-
+import { db, auth } from "./firebase";
 import {
   collection,
   addDoc,
   onSnapshot,
   updateDoc,
   doc,
-  serverTimestamp
+  setDoc
 } from "firebase/firestore";
+import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
-/* ================= CATEGORIES ================= */
+/* ================= PRODUCTS (HINDI BINAWASAN) ================= */
 const categories = [
   "All Products",
   "Hot Drinks",
@@ -20,7 +20,6 @@ const categories = [
   "Oatside Series"
 ];
 
-/* ================= PRODUCTS ================= */
 const products = [
   { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69 },
   { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79 },
@@ -31,59 +30,66 @@ const products = [
   { id: 25, name: "Iced Matcha Latte", category: "Matcha Collection", size: "16oz", price: 89 }
 ];
 
-/* ================= DEVICE ================= */
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
 
 export default function App() {
+  const [user, setUser] = useState(null);
+
   const [view, setView] = useState("cashier");
   const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
 
   const [orders, setOrders] = useState([]);
+  const [kitchenOrders, setKitchenOrders] = useState([]);
   const [cart, setCart] = useState([]);
-
-  const [category, setCategory] = useState("All Products");
-  const [search, setSearch] = useState("");
 
   const [orderType, setOrderType] = useState("dine-in");
   const [deliveryFee, setDeliveryFee] = useState("");
   const [discount, setDiscount] = useState("");
   const [cash, setCash] = useState("");
 
-  /* ================= FIREBASE LIVE LISTENER ================= */
+  const [category, setCategory] = useState("All Products");
+  const [search, setSearch] = useState("");
+
+  /* ================= LOGIN ================= */
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "orders"), (snap) => {
-      const data = snap.docs.map((d) => ({
-        id: d.id,
-        ...d.data()
-      }));
-      setOrders(data);
+    signInAnonymously(auth);
+
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
     });
 
     return () => unsub();
   }, []);
 
+  /* ================= REALTIME FIREBASE ================= */
+  useEffect(() => {
+    const unsubOrders = onSnapshot(collection(db, "orders"), (snap) => {
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    const unsubKitchen = onSnapshot(collection(db, "kitchenOrders"), (snap) => {
+      setKitchenOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => {
+      unsubOrders();
+      unsubKitchen();
+    };
+  }, []);
+
   /* ================= DEVICE ================= */
-  const initDevice = (id: string) => {
+  const initDevice = (id) => {
     localStorage.setItem("deviceId", id);
     setDeviceId(id);
   };
 
-  /* ================= CART KEY ================= */
-  const makeKey = (item: any) => {
-    const addons = item.addons ? [...item.addons].sort().join("|") : "";
-    return `${item.id}-${item.sizeType}-${item.sizeExtra}-${addons}`;
-  };
+  /* ================= CART ================= */
+  const makeKey = (item) =>
+    `${item.id}-${item.sizeType}-${item.sizeExtra}-${(item.addons || []).join("|")}`;
 
-  /* ================= ADD TO CART ================= */
-  const addToCart = (item: any, sizeType: string, sizeExtra = 0) => {
-    setCart((prev: any[]) => {
-      const newItem = {
-        ...item,
-        qty: 1,
-        sizeType,
-        sizeExtra,
-        addons: []
-      };
+  const addToCart = (item, sizeType, sizeExtra = 0) => {
+    setCart(prev => {
+      const newItem = { ...item, qty: 1, sizeType, sizeExtra, addons: [] };
 
       const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
 
@@ -97,36 +103,33 @@ export default function App() {
     });
   };
 
-  /* ================= CART ACTIONS ================= */
-  const updateQty = (idx: number, delta: number) => {
-    setCart((prev: any[]) => {
+  const updateQty = (i, d) => {
+    setCart(prev => {
       const copy = [...prev];
-      copy[idx].qty += delta;
-      if (copy[idx].qty <= 0) copy.splice(idx, 1);
+      copy[i].qty += d;
+      if (copy[i].qty <= 0) copy.splice(i, 1);
       return copy;
     });
   };
 
-  const toggleExtraShot = (idx: number) => {
-    setCart((prev: any[]) => {
+  const toggleExtraShot = (i) => {
+    setCart(prev => {
       const copy = [...prev];
-      const item = { ...copy[idx] };
+      const item = { ...copy[i] };
 
       const addons = item.addons || [];
 
-      if (addons.includes("Extra Shot")) {
-        item.addons = addons.filter((a: string) => a !== "Extra Shot");
-      } else {
-        item.addons = [...addons, "Extra Shot"];
-      }
+      item.addons = addons.includes("Extra Shot")
+        ? addons.filter(a => a !== "Extra Shot")
+        : [...addons, "Extra Shot"];
 
-      copy[idx] = item;
+      copy[i] = item;
       return copy;
     });
   };
 
-  /* ================= COMPUTE ================= */
-  const computeItem = (item: any) => {
+  /* ================= TOTAL ================= */
+  const computeItem = (item) => {
     const base = item.price * item.qty;
     const size = (item.sizeExtra || 0) * item.qty;
     const addon = (item.addons?.includes("Extra Shot") ? 10 : 0) * item.qty;
@@ -135,19 +138,14 @@ export default function App() {
 
   const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
 
-  const total =
-    cartTotal +
-    Number(deliveryFee || 0) -
-    Number(discount || 0);
-
+  const total = cartTotal + Number(deliveryFee || 0) - Number(discount || 0);
   const change = cash ? Number(cash) - total : 0;
 
-  /* ================= CHECKOUT ================= */
+  /* ================= CHECKOUT (REALTIME FIREBASE WRITE) ================= */
   const checkout = async () => {
     if (!cart.length) return;
 
     const order = {
-      orderNumber: `${deviceId}-${Date.now()}`,
       deviceId,
       items: cart,
       orderType,
@@ -155,11 +153,12 @@ export default function App() {
       discount: Number(discount || 0),
       cash: Number(cash || 0),
       total,
-      status: "pending",
-      createdAt: serverTimestamp()
+      status: "ongoing",
+      createdAt: Date.now()
     };
 
     await addDoc(collection(db, "orders"), order);
+    await addDoc(collection(db, "kitchenOrders"), order);
 
     setCart([]);
     setCash("");
@@ -167,14 +166,15 @@ export default function App() {
     setDeliveryFee("");
   };
 
-  /* ================= STATUS UPDATE ================= */
-  const markDone = async (id: string) => {
-    await updateDoc(doc(db, "orders", id), {
-      status: "done"
-    });
+  /* ================= DONE STATUS ================= */
+  const markDone = async (id) => {
+    const ref1 = doc(db, "orders", id);
+    const ref2 = doc(db, "kitchenOrders", id);
+
+    await updateDoc(ref1, { status: "done" });
+    await updateDoc(ref2, { status: "done" });
   };
 
-  /* ================= FILTER ================= */
   const filtered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
@@ -182,10 +182,9 @@ export default function App() {
     );
   }, [category, search]);
 
-  const kitchenOrders = orders.filter(o => o.status !== "done");
-  const doneOrders = orders.filter(o => o.status === "done");
+  /* ================= LOGIN SCREEN ================= */
+  if (!user) return <h2>Loading POS...</h2>;
 
-  /* ================= DEVICE SELECT ================= */
   if (!deviceId) {
     return (
       <div>
@@ -199,12 +198,13 @@ export default function App() {
     );
   }
 
+  /* ================= UI ================= */
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-
+      
       {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10 }}>
-        <h3>Coffee D' Titos</h3>
+      <div style={{ width: 220 }}>
+        <h3>POS</h3>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
         <button onClick={() => setView("kitchen")}>Kitchen</button>
@@ -221,65 +221,28 @@ export default function App() {
 
       {/* CASHIER */}
       {view === "cashier" && (
-        <div style={{ flex: 1, display: "flex" }}>
-
-          <div style={{ flex: 1, padding: 10 }}>
-            <input
-              placeholder="Search"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-
+        <div style={{ display: "flex", flex: 1 }}>
+          
+          <div style={{ flex: 1 }}>
             {filtered.map(p => (
               <div key={p.id}>
                 {p.name} ₱{p.price}
-
-                <button onClick={() => addToCart(p, "Malaki", 0)}>Malaki</button>
-                <button onClick={() => addToCart(p, "Mas Malaki", 10)}>Mas Malaki +10</button>
+                <button onClick={() => addToCart(p, "Regular", 0)}>Add</button>
               </div>
             ))}
           </div>
 
           {/* CART */}
-          <div style={{ width: 320, padding: 10 }}>
-            <h3>Cart</h3>
-
+          <div style={{ width: 300 }}>
             {cart.map((i, idx) => (
-              <div key={idx} style={{ border: "1px solid #eee", marginBottom: 10, padding: 8 }}>
-                <b>{i.name}</b>
-
-                <div>Qty: {i.qty}</div>
-
-                <div>₱{computeItem(i)}</div>
-
-                {i.addons?.length > 0 && (
-                  <div style={{ color: "green" }}>{i.addons.join(", ")}</div>
-                )}
-
+              <div key={idx}>
+                {i.name} x{i.qty}
                 <button onClick={() => updateQty(idx, -1)}>-</button>
                 <button onClick={() => updateQty(idx, 1)}>+</button>
-                <button onClick={() => toggleExtraShot(idx)}>Extra Shot</button>
               </div>
             ))}
 
-            <hr />
-
-            <select value={orderType} onChange={e => setOrderType(e.target.value)}>
-              <option value="dine-in">Dine-in</option>
-              <option value="take-out">Take-out</option>
-              <option value="delivery">Delivery</option>
-            </select>
-
-            {orderType === "delivery" && (
-              <input placeholder="Delivery Fee" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} />
-            )}
-
-            <input placeholder="Discount" value={discount} onChange={e => setDiscount(e.target.value)} />
-            <input placeholder="Cash" value={cash} onChange={e => setCash(e.target.value)} />
-
             <h3>Total: ₱{total}</h3>
-            {cash && <div>Change: ₱{change}</div>}
-
             <button onClick={checkout}>Checkout</button>
           </div>
         </div>
@@ -287,39 +250,29 @@ export default function App() {
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen</h2>
-
-          {kitchenOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10, padding: 10 }}>
-              <b>{o.orderNumber}</b>
-
-              {o.items.map((i: any, idx: number) => (
-                <div key={idx}>
-                  {i.name} x{i.qty} ({i.sizeType})
-                  {i.addons?.length > 0 && ` | ${i.addons.join(", ")}`}
-                </div>
-              ))}
-
-              <button onClick={() => markDone(o.id)}>Done</button>
-            </div>
-          ))}
+        <div>
+          {kitchenOrders
+            .filter(o => o.status !== "done")
+            .map(o => (
+              <div key={o.id}>
+                <b>{o.id}</b>
+                <button onClick={() => markDone(o.id)}>Done</button>
+              </div>
+            ))}
         </div>
       )}
 
       {/* ADMIN */}
       {view === "admin" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Completed Orders</h2>
-
-          {doneOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10, padding: 10 }}>
-              <b>{o.orderNumber}</b>
-              <div>Total: ₱{o.total}</div>
-              <div>Cash: ₱{o.cash}</div>
-              <div>Change: ₱{o.cash - o.total}</div>
-            </div>
-          ))}
+        <div>
+          {orders
+            .filter(o => o.status === "done")
+            .map(o => (
+              <div key={o.id}>
+                <b>{o.id}</b>
+                <div>Total: ₱{o.total}</div>
+              </div>
+            ))}
         </div>
       )}
     </div>
