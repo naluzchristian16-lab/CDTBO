@@ -1,3 +1,4 @@
+/* ================= IMPORTS ================= */
 import { useMemo, useEffect, useState } from "react";
 
 import { db, auth } from "./firebase";
@@ -99,6 +100,8 @@ export default function App() {
   const [deliveryFee, setDeliveryFee] = useState("");
   const [discount, setDiscount] = useState("");
   const [cash, setCash] = useState("");
+
+  const [orderCounter, setOrderCounter] = useState(1);
 
   /* ================= FIREBASE LIVE ================= */
   useEffect(() => {
@@ -217,7 +220,7 @@ export default function App() {
 
   };
 
-  /* ================= ADDONS ================= */
+  /* ================= EXTRA SHOT ================= */
   const toggleExtraShot = (idx: number) => {
 
     setCart(prev => {
@@ -290,10 +293,30 @@ export default function App() {
 
     if (!cart.length) return;
 
+    const now = new Date();
+
+    const dd =
+      String(now.getDate()).padStart(2, "0");
+
+    const mm =
+      String(now.getMonth() + 1).padStart(2, "0");
+
+    const yy =
+      String(now.getFullYear()).slice(-2);
+
+    const posCode =
+      deviceId.replace("POS", "P");
+
+    const orderNo =
+      String(orderCounter).padStart(4, "0");
+
+    const finalOrderNumber =
+      `${dd}${mm}${yy}-${posCode}-${orderNo}`;
+
     const order = {
 
       orderNumber:
-        `${deviceId}-${Date.now()}`,
+        finalOrderNumber,
 
       deviceId,
 
@@ -314,7 +337,8 @@ export default function App() {
 
       status: "pending",
 
-      createdAt: Date.now()
+      createdAt:
+        Date.now()
 
     };
 
@@ -322,6 +346,8 @@ export default function App() {
       collection(db, "orders"),
       order
     );
+
+    setOrderCounter(prev => prev + 1);
 
     setCart([]);
 
@@ -370,489 +396,3 @@ export default function App() {
     orders.filter(
       o => o.status === "completed"
     );
-
-  /* ================= LOGIN SCREEN ================= */
-  if (!user) {
-
-    return (
-
-      <div style={{ padding: 40 }}>
-
-        <h1>CDT POS Login</h1>
-
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) =>
-            setEmail(e.target.value)
-          }
-        />
-
-        <br /><br />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) =>
-            setPassword(e.target.value)
-          }
-        />
-
-        <br /><br />
-
-        <button onClick={login}>
-          Login
-        </button>
-
-      </div>
-
-    );
-
-  }
-
-  /* ================= DEVICE ================= */
-  if (!deviceId) {
-
-    return (
-
-      <div style={{ padding: 40 }}>
-
-        <h2>Select POS</h2>
-
-        {DEVICE_IDS.map(id => (
-
-          <button
-            key={id}
-            onClick={() => initDevice(id)}
-          >
-            {id}
-          </button>
-
-        ))}
-
-      </div>
-
-    );
-
-  }
-
-  return (
-
-    <div style={{
-      display: "flex",
-      height: "100vh"
-    }}>
-
-      {/* SIDEBAR */}
-      <div style={{
-        width: 220,
-        padding: 10,
-        borderRight: "1px solid #ddd"
-      }}>
-
-        <h2>Coffee D' Titos</h2>
-
-        <button onClick={() => setView("cashier")}>
-          Cashier
-        </button>
-
-        <button onClick={() => setView("kitchen")}>
-          Kitchen
-        </button>
-
-        <button onClick={() => setView("admin")}>
-          Admin
-        </button>
-
-        <button onClick={logout}>
-          Logout
-        </button>
-
-        <hr />
-
-        {categories.map(c => (
-
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            style={{
-              display: "block",
-              width: "100%",
-              marginBottom: 5,
-              background:
-                category === c
-                  ? "#ddd"
-                  : "#fff"
-            }}
-          >
-            {c}
-          </button>
-
-        ))}
-
-      </div>
-
-      {/* CASHIER */}
-      {view === "cashier" && (
-
-        <div style={{
-          flex: 1,
-          display: "flex"
-        }}>
-
-          {/* PRODUCTS */}
-          <div style={{
-            flex: 1,
-            padding: 10
-          }}>
-
-            <input
-              placeholder="Search"
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-            />
-
-            {filtered.map(p => (
-
-              <div
-                key={p.id}
-                style={{
-                  border: "1px solid #ddd",
-                  padding: 10,
-                  marginBottom: 10
-                }}
-              >
-
-                <b>{p.name}</b>
-
-                <div>
-                  ₱{p.price}
-                </div>
-
-                <button
-                  onClick={() =>
-                    addToCart(p, "Malaki", 0)
-                  }
-                >
-                  Malaki
-                </button>
-
-                <button
-                  onClick={() =>
-                    addToCart(p, "Mas Malaki", 10)
-                  }
-                >
-                  Mas Malaki +10
-                </button>
-
-              </div>
-
-            ))}
-
-          </div>
-
-          {/* CART */}
-          <div style={{
-            width: 320,
-            padding: 10,
-            borderLeft: "1px solid #ddd"
-          }}>
-
-            <h3>Cart</h3>
-
-            {cart.map((i, idx) => (
-
-              <div
-                key={idx}
-                style={{
-                  border: "1px solid #ddd",
-                  padding: 10,
-                  marginBottom: 10
-                }}
-              >
-
-                <b>{i.name}</b>
-
-                <div>
-                  Size:
-                  {i.sizeType}
-                </div>
-
-                <div>
-                  Qty:
-                  {i.qty}
-
-                  <button
-                    onClick={() =>
-                      updateQty(idx, -1)
-                    }
-                  >
-                    -
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      updateQty(idx, 1)
-                    }
-                  >
-                    +
-                  </button>
-                </div>
-
-                {i.addons?.length > 0 && (
-                  <div>
-                    Add-ons:
-                    {i.addons.join(", ")}
-                  </div>
-                )}
-
-                <div>
-                  ₱{computeItem(i)}
-                </div>
-
-                {i.coffee && (
-  <button
-    onClick={() =>
-      toggleExtraShot(idx)
-    }
-  >
-    Extra Shot
-  </button>
-)}
-
-              </div>
-
-            ))}
-
-            <hr />
-
-            <select
-              value={orderType}
-              onChange={(e) =>
-                setOrderType(e.target.value)
-              }
-            >
-              <option value="dine-in">
-                Dine-in
-              </option>
-
-              <option value="take-out">
-                Take-out
-              </option>
-
-              <option value="delivery">
-                Delivery
-              </option>
-            </select>
-
-            {orderType === "delivery" && (
-              <input
-                placeholder="Delivery Fee"
-                value={deliveryFee}
-                onChange={(e) =>
-                  setDeliveryFee(e.target.value)
-                }
-              />
-            )}
-
-            <input
-              placeholder="Discount"
-              value={discount}
-              onChange={(e) =>
-                setDiscount(e.target.value)
-              }
-            />
-
-            <input
-              placeholder="Cash"
-              value={cash}
-              onChange={(e) =>
-                setCash(e.target.value)
-              }
-            />
-
-            <h3>
-              Total: ₱{total}
-            </h3>
-
-            {cash && (
-              <div>
-                Change: ₱{change}
-              </div>
-            )}
-
-            <button onClick={checkout}>
-              Checkout
-            </button>
-
-          </div>
-
-        </div>
-
-      )}
-
-      {/* KITCHEN */}
-      {view === "kitchen" && (
-
-        <div style={{
-          flex: 1,
-          padding: 20
-        }}>
-
-          <h2>Kitchen</h2>
-
-          {activeOrders.map(o => (
-
-            <div
-              key={o.id}
-              style={{
-                border: "1px solid #ddd",
-                padding: 12,
-                marginBottom: 12
-              }}
-            >
-
-              <h3>
-                {o.orderNumber}
-              </h3>
-
-              <div>
-                Status:
-                {o.status}
-              </div>
-
-              {o.items.map((i: any, idx: number) => (
-
-                <div key={idx}>
-
-                  <b>
-                    {i.name}
-                  </b>
-
-                  {" "}x{i.qty}
-
-                  <div>
-                    Size:
-                    {i.sizeType}
-                  </div>
-
-                  {i.addons?.length > 0 && (
-                    <div>
-                      Add-ons:
-                      {i.addons.join(", ")}
-                    </div>
-                  )}
-
-                </div>
-
-              ))}
-
-              <br />
-
-              {o.status === "pending" && (
-                <button
-                  onClick={() =>
-                    updateStatus(o.id, "preparing")
-                  }
-                >
-                  Start Preparing
-                </button>
-              )}
-
-              {o.status === "preparing" && (
-                <button
-                  onClick={() =>
-                    updateStatus(o.id, "completed")
-                  }
-                >
-                  Complete Order
-                </button>
-              )}
-
-            </div>
-
-          ))}
-
-        </div>
-
-      )}
-
-      {/* ADMIN */}
-      {view === "admin" && (
-
-        <div style={{
-          flex: 1,
-          padding: 20
-        }}>
-
-          <h2>Completed Orders</h2>
-
-          {completedOrders.map(o => (
-
-            <div
-              key={o.id}
-              style={{
-                border: "1px solid #ddd",
-                padding: 12,
-                marginBottom: 12
-              }}
-            >
-
-              <h3>
-                {o.orderNumber}
-              </h3>
-
-              <div>
-                Type:
-                {o.orderType}
-              </div>
-
-              {o.items.map((i: any, idx: number) => (
-
-                <div key={idx}>
-
-                  <b>
-                    {i.name}
-                  </b>
-
-                  {" "}x{i.qty}
-
-                  <div>
-                    Size:
-                    {i.sizeType}
-                  </div>
-
-                  {i.addons?.length > 0 && (
-                    <div>
-                      Add-ons:
-                      {i.addons.join(", ")}
-                    </div>
-                  )}
-
-                </div>
-
-              ))}
-
-              <hr />
-
-              <div>
-                Total:
-                ₱{o.total}
-              </div>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      )}
-
-    </div>
-
-  );
-
-}
