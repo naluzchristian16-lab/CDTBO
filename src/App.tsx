@@ -12,186 +12,14 @@ const categories = [
 
 /* ================= PRODUCTS ================= */
 const products = [
-  { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69, type: "hot", coffee: true },
-  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: true },
-  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: true },
-  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
-  { id: 5, name: "Hot Strawberry Latte", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
-  { id: 6, name: "Hot Strawberry Mocha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
-  { id: 7, name: "Hot Matcha Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: false },
-  { id: 8, name: "Hot Strawberry Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: false },
-  { id: 9, name: "Hot Strawberry Dirty Matcha", category: "Hot Drinks", size: "12oz", price: 99, type: "hot", coffee: true },
-  { id: 10, name: "Hot Blueberry Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: false },
-
-  { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 79, type: "iced", coffee: true },
-  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 13, name: "Iced Mocha", category: "Iced Coffee", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 14, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 15, name: "Iced Ube Macchiato", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 16, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-
-  { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 19, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 20, name: "Mixed Berries Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 21, name: "Strawberry Choco", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 22, name: "Green Apple Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
-  { id: 23, name: "Blueberry Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
-  { id: 24, name: "Lychee Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
-
-  { id: 25, name: "Iced Matcha Latte", category: "Matcha Collection", size: "16oz", price: 89, type: "iced", coffee: false },
-  { id: 26, name: "Iced Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 27, name: "Iced Strawberry Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 28, name: "Iced Blueberry Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 29, name: "Iced Mixed Berries Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 30, name: "Iced Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 109, type: "iced", coffee: true },
-
-  { id: 31, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 32, name: "Oatside Mocha", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 33, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 34, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: false },
-  { id: 35, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 36, name: "Oatside Strawberry Mocha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 37, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 38, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 109, type: "iced", coffee: true }
-];
-/* ================= DEVICE ================= */
-const DEVICE_IDS = ["POS1", "POS2", "POS3"];
-
-export default function App() {
-  const [view, setView] = useState("cashier");
-  const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
-
-  const [orders, setOrders] = useState<any[]>([]);
-  const [kitchenOrders, setKitchenOrders] = useState<any[]>([]);
-  const [cart, setCart] = useState<any[]>([]);
-
-  const [category, setCategory] = useState("All Products");
-  const [search, setSearch] = useState("");
-
-  const [orderType, setOrderType] = useState("dine-in");
-  const [deliveryFee, setDeliveryFee] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [cash, setCash] = useState("");
-  useEffect(() => {
-  const savedKitchen = localStorage.getItem("kitchenOrders");
-  const savedOrders = localStorage.getItem("orders");
-
-  if (savedKitchen) setKitchenOrders(JSON.parse(savedKitchen));
-  if (savedOrders) setOrders(JSON.parse(savedOrders));
-}, []);
-
-  useEffect(() => {
-  localStorage.setItem("kitchenOrders", JSON.stringify(kitchenOrders));
-}, [kitchenOrders]);
-
-useEffect(() => {
-  localStorage.setItem("orders", JSON.stringify(orders));
-}, [orders]);
-
-  /* ================= DEVICE INIT ================= */
-  const initDevice = (id: string) => {
-    localStorage.setItem("deviceId", id);
-    setDeviceId(id);
-  };
-
-  /* ================= CART ================= */
-  const addToCart = (item: any, sizeType: string, sizeExtra: number, isAddon = false) => {
-  setCart(prev => {
-    const i = prev.findIndex(p =>
-      p.id === item.id &&
-      p.size === sizeType &&
-      !!p.isAddon === isAddon
-    );
-
-    if (i !== -1) {
-      const copy = [...prev];
-      copy[i].qty += 1;
-      return copy;
-    }
-
-    return [
-      ...prev,
-      {
-        ...item,
-        qty: 1,
-        size: sizeType,
-        sizeExtra,
-        isAddon
-      }
-    ];
-  });
-};
-  
-  const updateQty = (idx: number, delta: number) => {
-    setCart(prev => {
-      const copy = [...prev];
-      copy[idx].qty += delta;
-      if (copy[idx].qty <= 0) copy.splice(idx, 1);
-      return copy;
-    });
-  };
-
-  const toggleExtraShot = (idx: number) => {
-    setCart(prev => {
-      constimport { useMemo, useEffect, useState } from "react";
-
-/* ================= CATEGORIES ================= */
-const categories = [
-  "All Products",
-  "Hot Drinks",
-  "Iced Coffee",
-  "Non-Coffee",
-  "Matcha Collection",
-  "Oatside Series"
-];
-
-/* ================= PRODUCTS ================= */
-const products = [
-  { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69, type: "hot", coffee: true },
-  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: true },
-  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: true },
-  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
-  { id: 5, name: "Hot Strawberry Latte", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
-  { id: 6, name: "Hot Strawberry Mocha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: true },
-  { id: 7, name: "Hot Matcha Latte", category: "Hot Drinks", size: "12oz", price: 79, type: "hot", coffee: false },
-  { id: 8, name: "Hot Strawberry Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: false },
-  { id: 9, name: "Hot Strawberry Dirty Matcha", category: "Hot Drinks", size: "12oz", price: 99, type: "hot", coffee: true },
-  { id: 10, name: "Hot Blueberry Matcha", category: "Hot Drinks", size: "12oz", price: 89, type: "hot", coffee: false },
-
-  { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 79, type: "iced", coffee: true },
-  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 13, name: "Iced Mocha", category: "Iced Coffee", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 14, name: "Iced Caramel Macchiato", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 15, name: "Iced Ube Macchiato", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 16, name: "Iced Strawberry Latte", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 17, name: "Iced Strawberry Mocha", category: "Iced Coffee", size: "16oz", price: 99, type: "iced", coffee: true },
-
-  { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 19, name: "Blueberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 20, name: "Mixed Berries Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 21, name: "Strawberry Choco", category: "Non-Coffee", size: "16oz", price: 79, type: "iced", coffee: false },
-  { id: 22, name: "Green Apple Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
-  { id: 23, name: "Blueberry Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
-  { id: 24, name: "Lychee Soda", category: "Non-Coffee", size: "16oz", price: 69, type: "iced", coffee: false },
-
-  { id: 25, name: "Iced Matcha Latte", category: "Matcha Collection", size: "16oz", price: 89, type: "iced", coffee: false },
-  { id: 26, name: "Iced Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 27, name: "Iced Strawberry Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 28, name: "Iced Blueberry Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 29, name: "Iced Mixed Berries Matcha", category: "Matcha Collection", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 30, name: "Iced Strawberry Dirty Matcha", category: "Matcha Collection", size: "16oz", price: 109, type: "iced", coffee: true },
-
-  { id: 31, name: "Oatside Spanish Latte", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 32, name: "Oatside Mocha", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: true },
-  { id: 33, name: "Oatside Caramel Macchiato", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 34, name: "Oatside Matcha Latte", category: "Oatside Series", size: "16oz", price: 89, type: "iced", coffee: false },
-  { id: 35, name: "Oatside Dirty Matcha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 36, name: "Oatside Strawberry Mocha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 37, name: "Oatside Strawberry Latte", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: true },
-  { id: 38, name: "Oatside Strawberry Matcha", category: "Oatside Series", size: "16oz", price: 99, type: "iced", coffee: false },
-  { id: 39, name: "Oatside Strawberry Dirty Matcha", category: "Oatside Series", size: "16oz", price: 109, type: "iced", coffee: true }
+  { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69 },
+  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79 },
+  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79 },
+  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89 },
+  { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 79 },
+  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89 },
+  { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79 },
+  { id: 25, name: "Iced Matcha Latte", category: "Matcha Collection", size: "16oz", price: 89 }
 ];
 
 /* ================= DEVICE ================= */
@@ -201,9 +29,9 @@ export default function App() {
   const [view, setView] = useState("cashier");
   const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
 
-  const [orders, setOrders] = useState<any[]>([]);
-  const [kitchenOrders, setKitchenOrders] = useState<any[]>([]);
-  const [cart, setCart] = useState<any[]>([]);
+  const [orders, setOrders] = useState([]);
+  const [kitchenOrders, setKitchenOrders] = useState([]);
+  const [cart, setCart] = useState([]);
 
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
@@ -213,13 +41,12 @@ export default function App() {
   const [discount, setDiscount] = useState("");
   const [cash, setCash] = useState("");
 
-  /* ================= LOCAL STORAGE ================= */
+  /* ================= STORAGE ================= */
   useEffect(() => {
-    const savedKitchen = localStorage.getItem("kitchenOrders");
-    const savedOrders = localStorage.getItem("orders");
-
-    if (savedKitchen) setKitchenOrders(JSON.parse(savedKitchen));
-    if (savedOrders) setOrders(JSON.parse(savedOrders));
+    const k = localStorage.getItem("kitchenOrders");
+    const o = localStorage.getItem("orders");
+    if (k) setKitchenOrders(JSON.parse(k));
+    if (o) setOrders(JSON.parse(o));
   }, []);
 
   useEffect(() => {
@@ -230,19 +57,16 @@ export default function App() {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
 
-  /* ================= DEVICE INIT ================= */
-  const initDevice = (id: string) => {
+  const initDevice = (id) => {
     localStorage.setItem("deviceId", id);
     setDeviceId(id);
   };
 
   /* ================= CART ================= */
-  const addToCart = (item: any, sizeType: string, sizeExtra: number, isAddon = false) => {
+  const addToCart = (item, sizeType, sizeExtra = 0) => {
     setCart(prev => {
-      const i = prev.findIndex(p =>
-        p.id === item.id &&
-        p.size === sizeType &&
-        p.isAddon === isAddon
+      const i = prev.findIndex(
+        p => p.id === item.id && p.sizeType === sizeType
       );
 
       if (i !== -1) {
@@ -256,15 +80,15 @@ export default function App() {
         {
           ...item,
           qty: 1,
-          size: sizeType,
+          sizeType,
           sizeExtra,
-          isAddon
+          addons: []
         }
       ];
     });
   };
 
-  const updateQty = (idx: number, delta: number) => {
+  const updateQty = (idx, delta) => {
     setCart(prev => {
       const copy = [...prev];
       copy[idx].qty += delta;
@@ -273,222 +97,16 @@ export default function App() {
     });
   };
 
-  const computeItem = (item: any) => {
-    return (item.price + (item.sizeExtra || 0)) * item.qty;
-  };
-
-  const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
-  const total = cartTotal + Number(deliveryFee || 0) - Number(discount || 0);
-  const change = cash ? Number(cash) - total : 0;
-
-  const orderNumber = () =>
-    `${deviceId}-${Date.now()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`;
-
-  /* ================= CHECKOUT ================= */
-  const checkout = () => {
-    if (!cart.length) return;
-
-    const order = {
-      orderNumber: orderNumber(),
-      deviceId,
-      items: cart,
-      orderType,
-      deliveryFee: Number(deliveryFee || 0),
-      discount: Number(discount || 0),
-      cash: Number(cash || 0),
-      total,
-      status: "ongoing",
-      createdAt: new Date().toISOString()
-    };
-
-    setOrders(prev => [order, ...prev]);
-    setKitchenOrders(prev => [order, ...prev]);
-    setCart([]);
-
-    setCash("");
-    setDiscount("");
-    setDeliveryFee("");
-  };
-
-  const markDone = (id: string) => {
-    setKitchenOrders(prev =>
-      prev.map(o =>
-        o.orderNumber === id ? { ...o, status: "done" } : o
-      )
-    );
-  };
-
-  const doneOrders = kitchenOrders.filter(o => o.status === "done");
-
-  const baseFiltered = useMemo(() => {
-    return products.filter(
-      p =>
-        (category === "All Products" || p.category === category) &&
-        p.name.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [category, search]);
-
-  if (!deviceId) {
-    return (
-      <div style={{ padding: 20 }}>
-        <h2>Select POS</h2>
-        {DEVICE_IDS.map(id => (
-          <button key={id} onClick={() => initDevice(id)}>{id}</button>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", height: "100vh" }}>
-
-      {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10 }}>
-        <h3>Coffee D' Titos</h3>
-        <p>{deviceId}</p>
-
-        <button onClick={() => setView("cashier")}>Cashier</button>
-        <button onClick={() => setView("kitchen")}>Kitchen</button>
-        <button onClick={() => setView("admin")}>Admin</button>
-
-        <hr />
-
-        {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>{c}</button>
-        ))}
-      </div>
-
-      {/* CASHIER */}
-      {view === "cashier" && (
-        <div style={{ flex: 1, display: "flex" }}>
-          <div style={{ flex: 1, padding: 10 }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} />
-
-            {baseFiltered.map(p => (
-              <div key={p.id}>
-                {p.name} ₱{p.price}
-
-                <button onClick={() => addToCart(p, "Malaki", 0)}>
-                  Malaki
-                </button>
-
-                <button onClick={() => addToCart(p, "Mas Malaki", 10)}>
-                  Mas Malaki +10
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* CART */}
-          <div style={{ width: 320, padding: 10 }}>
-            <h3>Cart</h3>
-
-            {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 10 }}>
-
-                {i.isAddon ? (
-                  <div style={{ color: "green" }}>
-                    ➕ {i.name} x{i.qty} - ₱{i.price * i.qty}
-                  </div>
-                ) : (
-                  <>
-                    <b>{i.name}</b> ({i.size})
-
-                    <div>
-                      Qty: {i.qty}
-                      <button onClick={() => updateQty(idx, -1)}>-</button>
-                      <button onClick={() => updateQty(idx, 1)}>+</button>
-                    </div>
-
-                    <div>
-                      ₱{i.price + (i.sizeExtra || 0)} x {i.qty} = ₱{computeItem(i)}
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        addToCart(
-                          { id: `extra-${i.id}`, name: "Extra Shot", price: 10 },
-                          "-",
-                          0,
-                          true
-                        )
-                      }
-                    >
-                      Extra Shot +₱10
-                    </button>
-                  </>
-                )}
-
-              </div>
-            ))}
-
-            <hr />
-
-            <select value={orderType} onChange={e => setOrderType(e.target.value)}>
-              <option value="dine-in">Dine-in</option>
-              <option value="take-out">Take-out</option>
-              <option value="delivery">Delivery</option>
-            </select>
-
-            <input placeholder="Discount" value={discount} onChange={e => setDiscount(e.target.value)} />
-            <input placeholder="Cash" value={cash} onChange={e => setCash(e.target.value)} />
-
-            <h3>Total: ₱{total}</h3>
-            {cash && <h4>Change: ₱{change}</h4>}
-
-            <button onClick={checkout}>Checkout</button>
-          </div>
-        </div>
-      )}
-
-      {/* KITCHEN */}
-      {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen</h2>
-
-          {kitchenOrders
-            .filter(o => o.status !== "done")
-            .map(o => (
-              <div key={o.orderNumber} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
-                <b>{o.orderNumber}</b>
-
-                {o.items.map((i: any, idx: number) => (
-                  <div key={idx}>
-                    <b>{i.name}</b> x{i.qty} {i.size}
-                  </div>
-                ))}
-
-                <h3>₱{o.total}</h3>
-
-                <button onClick={() => markDone(o.orderNumber)}>Done</button>
-              </div>
-            ))}
-        </div>
-      )}
-
-      {/* ADMIN */}
-      {view === "admin" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Completed Orders</h2>
-
-          {doneOrders.map(o => (
-            <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
-              <b>{o.orderNumber}</b>
-              <h3>Total: ₱{o.total}</h3>
-            </div>
-          ))}
-        </div>
-      )}
-
-    </div>
-  );
-} copy = [...prev];
+  /* ================= EXTRA SHOT (FIXED) ================= */
+  const toggleExtraShot = (idx) => {
+    setCart(prev => {
+      const copy = [...prev];
       const item = copy[idx];
 
       if (!item.addons) item.addons = [];
 
       if (item.addons.includes("Extra Shot")) {
-        item.addons = item.addons.filter((a: string) => a !== "Extra Shot");
+        item.addons = item.addons.filter(a => a !== "Extra Shot");
       } else {
         item.addons.push("Extra Shot");
       }
@@ -497,22 +115,25 @@ export default function App() {
     });
   };
 
-  const computeItem = (item: any) => {
-  const base = item.price * item.qty;
-  const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
-  const sizeExtra = (item.sizeExtra || 0) * item.qty;
+  /* ================= COMPUTE ================= */
+  const computeItem = (item) => {
+    const base = item.price * item.qty;
+    const size = (item.sizeExtra || 0) * item.qty;
+    const addon = (item.addons?.includes("Extra Shot") ? 10 : 0) * item.qty;
+    return base + size + addon;
+  };
 
-  return base + addon + sizeExtra;
-};
+  const total = cart.reduce((a, b) => a + computeItem(b), 0);
 
-  const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
+  const grandTotal =
+    total +
+    Number(deliveryFee || 0) -
+    Number(discount || 0);
 
-  const total = cartTotal + Number(deliveryFee || 0) - Number(discount || 0);
-  const change = cash ? Number(cash) - total : 0;
+  const change = cash ? Number(cash) - grandTotal : 0;
 
-  /* ================= ORDER NUMBER ================= */
   const orderNumber = () =>
-    `${deviceId}-${Date.now()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`;
+    `${deviceId}-${Date.now()}`;
 
   /* ================= CHECKOUT ================= */
   const checkout = () => {
@@ -526,210 +147,130 @@ export default function App() {
       deliveryFee: Number(deliveryFee || 0),
       discount: Number(discount || 0),
       cash: Number(cash || 0),
-      total,
-      status: "ongoing",
-      createdAt: new Date().toISOString()
+      total: grandTotal,
+      status: "ongoing"
     };
 
     setOrders(prev => [order, ...prev]);
     setKitchenOrders(prev => [order, ...prev]);
     setCart([]);
-
-    setCash("");
-    setDiscount("");
-    setDeliveryFee("");
   };
 
-  const markDone = (id: string) => {
-  setKitchenOrders(prev =>
-    prev.map(o =>
-      o.orderNumber === id
-        ? { ...o, status: "done" }
-        : o
-    )
-  );
-};
+  const markDone = (id) => {
+    setKitchenOrders(prev =>
+      prev.map(o =>
+        o.orderNumber === id ? { ...o, status: "done" } : o
+      )
+    );
+  };
 
-  const doneOrders = kitchenOrders.filter(o => o.status === "done");
-
-  /* ================= FILTER ================= */
-  const baseFiltered = useMemo(() => {
-    return products.filter(
-      p => (category === "All Products" || p.category === category) &&
+  const filtered = useMemo(() => {
+    return products.filter(p =>
+      (category === "All Products" || p.category === category) &&
       p.name.toLowerCase().includes(search.toLowerCase())
     );
   }, [category, search]);
 
   /* ================= UI ================= */
-
   if (!deviceId) {
     return (
-      <div style={{ padding: 20 }}>
+      <div>
         <h2>Select POS</h2>
         {DEVICE_IDS.map(id => (
-          <button key={id} onClick={() => initDevice(id)}>{id}</button>
+          <button key={id} onClick={() => initDevice(id)}>
+            {id}
+          </button>
         ))}
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={{ display: "flex" }}>
 
-      {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10 }}>
-        <h3>Coffee D' Titos</h3>
-        <p>{deviceId}</p>
+      {/* PRODUCTS */}
+      <div style={{ flex: 1 }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} />
 
-        <button onClick={() => setView("cashier")}>Cashier</button>
-        <button onClick={() => setView("kitchen")}>Kitchen</button>
-        <button onClick={() => setView("admin")}>Admin</button>
+        {filtered.map(p => (
+          <div key={p.id}>
+            {p.name} ₱{p.price} ({p.size})
 
-        <hr />
+            <button onClick={() => addToCart(p, "Malaki", 0)}>
+              Malaki
+            </button>
 
-        {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>{c}</button>
+            <button onClick={() => addToCart(p, "Mas Malaki", 10)}>
+              Mas Malaki +10
+            </button>
+          </div>
         ))}
       </div>
 
-      {/* CASHIER */}
-      {view === "cashier" && (
-        <div style={{ flex: 1, display: "flex" }}>
+      {/* CART */}
+      <div style={{ width: 300 }}>
+        <h3>Cart</h3>
 
-          <div style={{ flex: 1, padding: 10 }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search" />
+        {cart.map((i, idx) => (
+          <div key={idx}>
+            <b>{i.name}</b>
+            <div>Size: {i.sizeType}</div>
 
-            {baseFiltered.map(p => (
-              <div key={p.id}>
-                {p.name} ₱{p.price}
-                <button onClick={() => addToCart(p, "Malaki", 0)}>
-                Malaki (base)
-                </button>
+            <div>
+              Qty: {i.qty}
+              <button onClick={() => updateQty(idx, -1)}>-</button>
+              <button onClick={() => updateQty(idx, 1)}>+</button>
+            </div>
 
-                <button onClick={() => addToCart(p, "Mas Malaki", 10)}>
-                Mas Malaki +₱10
-                </button>
+            <div>₱{computeItem(i)}</div>
+
+            <button onClick={() => toggleExtraShot(idx)}>
+              Extra Shot +10
+            </button>
+
+            {i.addons?.length > 0 && (
+              <div style={{ color: "green" }}>
+                {i.addons.join(", ")}
               </div>
-            ))}
-          </div>
-
-          {/* CART */}
-          <div style={{ width: 320, padding: 10 }}>
-            <h3>Cart</h3>
-
-            {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 10 }}>
-                <b>{i.name}</b> ({i.size})
-
-                <div>
-                  Qty: {i.qty}
-                  <button onClick={() => updateQty(idx, -1)}>-</button>
-                  <button onClick={() => updateQty(idx, 1)}>+</button>
-                </div>
-
-                <div>
-                  ₱{i.price} x {i.qty} = ₱{computeItem(i)}
-                </div>
-
-                <button onClick={() => toggleExtraShot(idx)}>Extra Shot</button>
-
-                {i.addons?.length > 0 && (
-                  <div style={{ color: "green" }}>
-                    + {i.addons.join(", ")}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            <hr />
-
-            <select value={orderType} onChange={e => setOrderType(e.target.value)}>
-              <option value="dine-in">Dine-in</option>
-              <option value="take-out">Take-out</option>
-              <option value="delivery">Delivery</option>
-            </select>
-
-            {orderType === "delivery" && (
-              <input placeholder="Delivery Fee" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} />
             )}
-
-            <input placeholder="Discount" value={discount} onChange={e => setDiscount(e.target.value)} />
-            <input placeholder="Cash" value={cash} onChange={e => setCash(e.target.value)} />
-
-            <h3>Total: ₱{total}</h3>
-            {cash && <h4 style={{ color: change >= 0 ? "green" : "red" }}>Change: ₱{change}</h4>}
-
-            <button onClick={checkout}>Checkout</button>
           </div>
-        </div>
-      )}
+        ))}
+
+        <hr />
+
+        <h3>Total: ₱{grandTotal}</h3>
+        {cash && <div>Change: ₱{change}</div>}
+
+        <button onClick={checkout}>Checkout</button>
+      </div>
 
       {/* KITCHEN */}
-      {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen</h2>
+      <div style={{ width: 300 }}>
+        <h3>Kitchen</h3>
 
-          {kitchenOrders
-            .filter(o => o.status !== "done")
-            .map(o => (
-            <div key={o.orderNumber} style={{ border: "1px solid #ccc", padding: 10, margin: 10 }}>
-              <b>{o.orderNumber}</b>
-              <p>{o.orderType}</p>
-
-              {o.items.map((i: any, idx: number) => (
-  <div
-    key={idx}
-    style={{
-      marginBottom: 6,
-      padding: 6,
-      borderBottom: "1px dashed #ddd"
-    }}
-  >
-    <div>
-      <b>{i.name}</b> x{i.qty}
-    </div>
-
-    <div style={{ fontSize: 12, color: "#444" }}>
-      Size: <b>{i.size}</b>
-      {i.sizeExtra > 0 && (
-        <span> (+₱{i.sizeExtra} per item)</span>
-      )}
-    </div>
-
-    {i.addons?.length > 0 && (
-      <div style={{ fontSize: 12, color: "green" }}>
-        Add-ons: {i.addons.join(", ")}
-      </div>
-    )}
-  </div>
-))}
-
-              <h3>₱{o.total}</h3>
-
-              <button onClick={() => markDone(o.orderNumber)}>Done</button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ADMIN */}
-      {view === "admin" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Completed Orders</h2>
-
-          {doneOrders.map(o => (
-            <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
+        {kitchenOrders
+          .filter(o => o.status !== "done")
+          .map(o => (
+            <div key={o.orderNumber}>
               <b>{o.orderNumber}</b>
 
-              {o.items.map((i: any, idx: number) => (
-                <div key={idx}>{i.name} x{i.qty}</div>
+              {o.items.map((i, idx) => (
+                <div key={idx}>
+                  {i.name} x{i.qty}
+                  <br />
+                  Size: {i.sizeType}
+                  {i.sizeExtra ? ` (+${i.sizeExtra})` : ""}
+                  <br />
+                  {i.addons?.join(", ")}
+                </div>
               ))}
 
-              <h3>Total: ₱{o.total}</h3>
+              <button onClick={() => markDone(o.orderNumber)}>
+                Done
+              </button>
             </div>
           ))}
-        </div>
-      )}
+      </div>
 
     </div>
   );
