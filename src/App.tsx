@@ -75,6 +75,21 @@ export default function App() {
   const [deliveryFee, setDeliveryFee] = useState("");
   const [discount, setDiscount] = useState("");
   const [cash, setCash] = useState("");
+  useEffect(() => {
+  const savedKitchen = localStorage.getItem("kitchenOrders");
+  const savedOrders = localStorage.getItem("orders");
+
+  if (savedKitchen) setKitchenOrders(JSON.parse(savedKitchen));
+  if (savedOrders) setOrders(JSON.parse(savedOrders));
+}, []);
+
+  useEffect(() => {
+  localStorage.setItem("kitchenOrders", JSON.stringify(kitchenOrders));
+}, [kitchenOrders]);
+
+useEffect(() => {
+  localStorage.setItem("orders", JSON.stringify(orders));
+}, [orders]);
 
   /* ================= DEVICE INIT ================= */
   const initDevice = (id: string) => {
@@ -163,10 +178,14 @@ export default function App() {
   };
 
   const markDone = (id: string) => {
-    setKitchenOrders(prev =>
-      prev.map(o => o.orderNumber === id ? { ...o, status: "done" } : o)
-    );
-  };
+  setKitchenOrders(prev =>
+    prev.map(o =>
+      o.orderNumber === id
+        ? { ...o, status: "done" }
+        : o
+    )
+  );
+};
 
   const doneOrders = kitchenOrders.filter(o => o.status === "done");
 
@@ -281,7 +300,9 @@ export default function App() {
         <div style={{ flex: 1, padding: 20 }}>
           <h2>Kitchen</h2>
 
-          {kitchenOrders.map(o => (
+          {kitchenOrders
+            .filter(o => o.status !== "done")
+            .map(o => (
             <div key={o.orderNumber} style={{ border: "1px solid #ccc", padding: 10, margin: 10 }}>
               <b>{o.orderNumber}</b>
               <p>{o.orderType}</p>
