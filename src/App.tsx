@@ -136,22 +136,30 @@ export default function App() {
   const checkout = () => {
     if (!cart.length) return;
 
-    const order = {
-      orderNumber: orderNumber(),
-      deviceId,
-      items: cart,
-      orderType,
-      deliveryFee: Number(deliveryFee || 0),
-      discount: Number(discount || 0),
-      cash: Number(cash || 0),
-      total,
-      status: "ongoing"
-    };
+    const checkout = () => {
+  if (!cart.length) return;
 
-    setOrders(prev => [order, ...prev]);
-    setKitchenOrders(prev => [order, ...prev]);
-    setCart([]);
+  const order = {
+    orderNumber: orderNumber(),
+    deviceId,
+    items: cart,
+    orderType,
+    deliveryFee: Number(deliveryFee || 0),
+    discount: Number(discount || 0),
+    cash: Number(cash || 0),
+    total,
+    status: "ongoing"
   };
+
+  setOrders(prev => [order, ...prev]);
+  setKitchenOrders(prev => [order, ...prev]);
+  setCart([]);
+
+  // ✅ AUTO CLEAR (IMPORTANT)
+  setCash("");
+  setDiscount("");
+  setDeliveryFee("");
+};
 
   /* ================= MARK DONE ================= */
   const markDone = (id) => {
@@ -319,26 +327,73 @@ export default function App() {
 
       {/* ADMIN */}
       {view === "admin" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Completed Orders</h2>
+  <div style={{ flex: 1, padding: 20 }}>
+    <h2>Completed Orders</h2>
 
-          {doneOrders.map(o => (
-            <div key={o.orderNumber}>
-              <b>{o.orderNumber}</b>
-              <div>Total: ₱{o.total}</div>
-              <div>Cash: ₱{o.cash}</div>
-              <div>Discount: ₱{o.discount}</div>
-              <div>Delivery: ₱{o.deliveryFee}</div>
+    {doneOrders.map(o => (
+      <div
+        key={o.orderNumber}
+        style={{
+          border: "1px solid #ddd",
+          marginBottom: 12,
+          padding: 12,
+          borderRadius: 8,
+          background: "#fff"
+        }}
+      >
 
-              <hr />
+        {/* HEADER */}
+        <div style={{ marginBottom: 8 }}>
+          <b>Order:</b> {o.orderNumber}<br />
+          <b>Type:</b> {o.orderType}
+        </div>
 
-              {o.items.map((i, idx) => (
-                <div key={idx}>
-                  {i.name} x{i.qty}
-                </div>
-              ))}
+        {/* ITEMS (SINGLE BLOCK / RECEIPT STYLE) */}
+        <div
+          style={{
+            background: "#f9f9f9",
+            padding: 8,
+            borderRadius: 6,
+            marginBottom: 10,
+            fontSize: 13
+          }}
+        >
+          {o.items.map((i, idx) => (
+            <div key={idx}>
+              {i.name} x{i.qty} ({i.sizeType})
+              {i.addons?.length > 0 && ` | ${i.addons.join(", ")}`}
             </div>
           ))}
+        </div>
+
+        {/* PAYMENT INFO */}
+        <div style={{ fontSize: 13 }}>
+          {o.orderType === "delivery" && (
+            <div>Delivery Fee: ₱{o.deliveryFee}</div>
+          )}
+
+          <div>Discount: ₱{o.discount}</div>
+          <div>Cash: ₱{o.cash}</div>
+        </div>
+
+        <hr />
+
+        {/* TOTAL */}
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <b>Total</b>
+          <b>₱{o.total}</b>
+        </div>
+
+        {/* CHANGE */}
+        {o.cash > 0 && (
+          <div style={{ marginTop: 5 }}>
+            Change: ₱{o.cash - o.total}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+)}
         </div>
       )}
     </div>
