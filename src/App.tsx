@@ -262,43 +262,122 @@ export default function App() {
           </div>
 
           {/* CART */}
-          <div style={{ width: 320, padding: 10 }}>
-            <h3>Cart</h3>
+<div style={{ width: 320, padding: 10 }}>
+  <h3>Cart</h3>
 
-            {cart.map((i, idx) => (
-              <div key={idx}>
-                <b>{i.name}</b>
-                <div>{i.sizeType}</div>
+  {cart.map((i, idx) => (
+    <div
+      key={idx}
+      style={{
+        marginBottom: 12,
+        padding: 8,
+        border: "1px solid #eee",
+        borderRadius: 6
+      }}
+    >
+      {/* ITEM HEADER */}
+      <b>{i.name}</b>
 
-                <div>
-                  Qty: {i.qty}
-                  <button onClick={() => updateQty(idx, -1)}>-</button>
-                  <button onClick={() => updateQty(idx, 1)}>+</button>
-                </div>
+      <div style={{ fontSize: 12, color: "#555" }}>
+        Size: {i.sizeType}
+        {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
+      </div>
 
-                <div>₱{computeItem(i)}</div>
+      {/* QTY CONTROLS */}
+      <div style={{ marginTop: 5 }}>
+        Qty: {i.qty}
+        <button onClick={() => updateQty(idx, -1)} style={{ marginLeft: 5 }}>-</button>
+        <button onClick={() => updateQty(idx, 1)}>+</button>
+      </div>
 
-                <button onClick={() => toggleExtraShot(idx)}>
-                  Extra Shot +10
-                </button>
-
-                {i.addons?.length > 0 && (
-                  <div style={{ color: "green" }}>
-                    {i.addons.join(", ")}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            <hr />
-
-            <h3>Total: ₱{total}</h3>
-            {cash && <div>Change: ₱{change}</div>}
-
-            <button onClick={checkout}>Checkout</button>
-          </div>
+      {/* ADDONS */}
+      {i.addons?.length > 0 && (
+        <div style={{ color: "green", fontSize: 12, marginTop: 5 }}>
+          Add-ons: {i.addons.join(", ")}
         </div>
       )}
+
+      {/* PRICE */}
+      <div style={{ marginTop: 5 }}>
+        ₱{computeItem(i)}
+      </div>
+
+      {/* EXTRA SHOT BUTTON */}
+      <button
+        onClick={() => toggleExtraShot(idx)}
+        style={{ marginTop: 5 }}
+      >
+        Extra Shot +₱10
+      </button>
+    </div>
+  ))}
+
+  <hr />
+
+  {/* ORDER TYPE */}
+  <select
+    value={orderType}
+    onChange={e => setOrderType(e.target.value)}
+    style={{ width: "100%", marginBottom: 5 }}
+  >
+    <option value="dine-in">Dine-in</option>
+    <option value="take-out">Take-out</option>
+    <option value="delivery">Delivery</option>
+  </select>
+
+  {/* DELIVERY FEE (ONLY IF DELIVERY) */}
+  {orderType === "delivery" && (
+    <input
+      placeholder="Delivery Fee"
+      value={deliveryFee}
+      onChange={e => setDeliveryFee(e.target.value)}
+      style={{ width: "100%", marginBottom: 5 }}
+    />
+  )}
+
+  {/* DISCOUNT */}
+  <input
+    placeholder="Discount"
+    value={discount}
+    onChange={e => setDiscount(e.target.value)}
+    style={{ width: "100%", marginBottom: 5 }}
+  />
+
+  {/* CASH */}
+  <input
+    placeholder="Cash Received"
+    value={cash}
+    onChange={e => setCash(e.target.value)}
+    style={{ width: "100%", marginBottom: 5 }}
+  />
+
+  {/* SUMMARY */}
+  <div style={{ marginTop: 10 }}>
+    <div><b>Subtotal:</b> ₱{cartTotal}</div>
+
+    {orderType === "delivery" && (
+      <div>Delivery: ₱{deliveryFee || 0}</div>
+    )}
+
+    <div>Discount: ₱{discount || 0}</div>
+
+    <h3>Total: ₱{total}</h3>
+
+    {cash && (
+      <div style={{ color: change >= 0 ? "green" : "red" }}>
+        Change: ₱{change}
+      </div>
+    )}
+  </div>
+
+  {/* CHECKOUT */}
+  <button
+    onClick={checkout}
+    style={{ marginTop: 10, width: "100%" }}
+  >
+    Checkout
+  </button>
+</div>
 
       {/* KITCHEN */}
       {view === "kitchen" && (
@@ -334,42 +413,81 @@ export default function App() {
     <h2>Completed Orders</h2>
 
     {doneOrders.map(o => (
-      <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
-        
-        <b>Order:</b> {o.orderNumber}
-        <br />
-        <b>Device:</b> {o.deviceId}
-        <br />
-        <b>Type:</b> {o.orderType}
+      <div
+        key={o.orderNumber}
+        style={{
+          border: "1px solid #ddd",
+          margin: 10,
+          padding: 15,
+          borderRadius: 8
+        }}
+      >
+        {/* HEADER */}
+        <div style={{ marginBottom: 10 }}>
+          <b>Order:</b> {o.orderNumber} <br />
+          <b>Device:</b> {o.deviceId}
+        </div>
+
+        {/* ORDER INFO */}
+        <div style={{ fontSize: 14, marginBottom: 10 }}>
+          <div><b>Order Type:</b> {o.orderType}</div>
+
+          {/* show delivery fee only if delivery */}
+          {o.orderType === "delivery" && (
+            <div>Delivery Fee: ₱{o.deliveryFee || 0}</div>
+          )}
+
+          <div>Discount: ₱{o.discount || 0}</div>
+          <div>Cash Received: ₱{o.cash || 0}</div>
+        </div>
 
         <hr />
 
-        {/* ITEMS BREAKDOWN */}
-        {o.items.map((i, idx) => (
-          <div key={idx} style={{ marginBottom: 6 }}>
-            <b>{i.name}</b> x{i.qty}
-            <div style={{ fontSize: 12, color: "#555" }}>
-              Size: {i.sizeType || i.size}
-              {i.sizeExtra ? ` (+₱${i.sizeExtra})` : ""}
-            </div>
+        {/* ITEMS */}
+        <div>
+          {o.items.map((i, idx) => (
+            <div
+              key={idx}
+              style={{
+                marginBottom: 8,
+                paddingBottom: 6,
+                borderBottom: "1px dashed #eee"
+              }}
+            >
+              <b>{i.name}</b> x{i.qty}
 
-            {i.addons?.length > 0 && (
-              <div style={{ fontSize: 12, color: "green" }}>
-                Add-ons: {i.addons.join(", ")}
+              <div style={{ fontSize: 12, color: "#555" }}>
+                Size: {i.sizeType || i.size}
+                {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
               </div>
-            )}
-          </div>
-        ))}
+
+              {i.addons?.length > 0 && (
+                <div style={{ fontSize: 12, color: "green" }}>
+                  Add-ons: {i.addons.join(", ")}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
         <hr />
 
-        <div>Delivery Fee: ₱{o.deliveryFee || 0}</div>
-        <div>Discount: ₱{o.discount || 0}</div>
+        {/* TOTALS */}
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <b>Total Sales:</b>
+          <b>₱{o.total}</b>
+        </div>
 
-        <h3>Total: ₱{o.total}</h3>
-
+        {/* CHANGE DISPLAY */}
+        {o.cash > 0 && (
+          <div style={{ marginTop: 5 }}>
+            Change: ₱{o.cash - o.total}
+          </div>
+        )}
       </div>
     ))}
+  </div>
+)}
   </div>
 )}
     </div>
