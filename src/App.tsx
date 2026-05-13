@@ -613,7 +613,7 @@ export default function App() {
                   ₱{computeItem(i)}
                 </div>
 
-                {i.Coffee && (
+                {i.coffee && (
   <button
     onClick={() =>
       toggleExtraShot(idx)
