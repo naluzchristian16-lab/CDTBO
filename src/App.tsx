@@ -65,9 +65,13 @@ export default function App() {
   /* ================= CART ================= */
   const addToCart = (item, sizeType, sizeExtra = 0) => {
     setCart(prev => {
-      const i = prev.findIndex(
-        p => p.id === item.id && p.sizeType === sizeType
-      );
+      const addonKey = (addons = []) => addons.sort().join("|");
+
+const i = prev.findIndex(p =>
+  p.id === item.id &&
+  p.sizeType === sizeType &&
+  addonKey(p.addons) === addonKey([])
+);
 
       if (i !== -1) {
         const copy = [...prev];
