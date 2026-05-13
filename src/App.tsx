@@ -15,7 +15,6 @@ const products = [
   { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69 },
   { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79 },
   { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79 },
-  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89 },
   { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 79 },
   { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89 },
   { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79 },
@@ -57,6 +56,7 @@ export default function App() {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
 
+  /* ================= DEVICE ================= */
   const initDevice = (id) => {
     localStorage.setItem("deviceId", id);
     setDeviceId(id);
@@ -97,7 +97,7 @@ export default function App() {
     });
   };
 
-  /* ================= EXTRA SHOT (FIXED) ================= */
+  /* ================= EXTRA SHOT ================= */
   const toggleExtraShot = (idx) => {
     setCart(prev => {
       const copy = [...prev];
@@ -123,14 +123,14 @@ export default function App() {
     return base + size + addon;
   };
 
-  const total = cart.reduce((a, b) => a + computeItem(b), 0);
+  const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
 
-  const grandTotal =
-    total +
+  const total =
+    cartTotal +
     Number(deliveryFee || 0) -
     Number(discount || 0);
 
-  const change = cash ? Number(cash) - grandTotal : 0;
+  const change = cash ? Number(cash) - total : 0;
 
   const orderNumber = () =>
     `${deviceId}-${Date.now()}`;
@@ -147,7 +147,7 @@ export default function App() {
       deliveryFee: Number(deliveryFee || 0),
       discount: Number(discount || 0),
       cash: Number(cash || 0),
-      total: grandTotal,
+      total,
       status: "ongoing"
     };
 
@@ -186,91 +186,129 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: "flex" }}>
+    <div style={{ display: "flex", height: "100vh" }}>
 
-      {/* PRODUCTS */}
-      <div style={{ flex: 1 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} />
+      {/* SIDEBAR + CATEGORIES (RESTORED) */}
+      <div style={{ width: 220, padding: 10 }}>
+        <h3>Coffee D' Titos</h3>
+        <p>{deviceId}</p>
 
-        {filtered.map(p => (
-          <div key={p.id}>
-            {p.name} ₱{p.price} ({p.size})
-
-            <button onClick={() => addToCart(p, "Malaki", 0)}>
-              Malaki
-            </button>
-
-            <button onClick={() => addToCart(p, "Mas Malaki", 10)}>
-              Mas Malaki +10
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* CART */}
-      <div style={{ width: 300 }}>
-        <h3>Cart</h3>
-
-        {cart.map((i, idx) => (
-          <div key={idx}>
-            <b>{i.name}</b>
-            <div>Size: {i.sizeType}</div>
-
-            <div>
-              Qty: {i.qty}
-              <button onClick={() => updateQty(idx, -1)}>-</button>
-              <button onClick={() => updateQty(idx, 1)}>+</button>
-            </div>
-
-            <div>₱{computeItem(i)}</div>
-
-            <button onClick={() => toggleExtraShot(idx)}>
-              Extra Shot +10
-            </button>
-
-            {i.addons?.length > 0 && (
-              <div style={{ color: "green" }}>
-                {i.addons.join(", ")}
-              </div>
-            )}
-          </div>
-        ))}
+        <button onClick={() => setView("cashier")}>Cashier</button>
+        <button onClick={() => setView("kitchen")}>Kitchen</button>
+        <button onClick={() => setView("admin")}>Admin</button>
 
         <hr />
 
-        <h3>Total: ₱{grandTotal}</h3>
-        {cash && <div>Change: ₱{change}</div>}
-
-        <button onClick={checkout}>Checkout</button>
+        {categories.map(c => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            style={{
+              display: "block",
+              width: "100%",
+              marginBottom: 5,
+              background: category === c ? "#ddd" : "#fff"
+            }}
+          >
+            {c}
+          </button>
+        ))}
       </div>
+
+      {/* CASHIER */}
+      {view === "cashier" && (
+        <div style={{ flex: 1, display: "flex" }}>
+
+          <div style={{ flex: 1, padding: 10 }}>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search"
+            />
+
+            {filtered.map(p => (
+              <div key={p.id} style={{ marginBottom: 10 }}>
+                {p.name} ₱{p.price} ({p.size})
+
+                <button onClick={() => addToCart(p, "Malaki", 0)}>
+                  Malaki
+                </button>
+
+                <button onClick={() => addToCart(p, "Mas Malaki", 10)}>
+                  Mas Malaki +10
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* CART */}
+          <div style={{ width: 320, padding: 10 }}>
+            <h3>Cart</h3>
+
+            {cart.map((i, idx) => (
+              <div key={idx} style={{ marginBottom: 10 }}>
+                <b>{i.name}</b>
+                <div>Size: {i.sizeType}</div>
+
+                <div>
+                  Qty: {i.qty}
+                  <button onClick={() => updateQty(idx, -1)}>-</button>
+                  <button onClick={() => updateQty(idx, 1)}>+</button>
+                </div>
+
+                <div>₱{computeItem(i)}</div>
+
+                <button onClick={() => toggleExtraShot(idx)}>
+                  Extra Shot +10
+                </button>
+
+                {i.addons?.length > 0 && (
+                  <div style={{ color: "green" }}>
+                    {i.addons.join(", ")}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <hr />
+
+            <h3>Total: ₱{total}</h3>
+            {cash && <div>Change: ₱{change}</div>}
+
+            <button onClick={checkout}>Checkout</button>
+          </div>
+        </div>
+      )}
 
       {/* KITCHEN */}
-      <div style={{ width: 300 }}>
-        <h3>Kitchen</h3>
+      {view === "kitchen" && (
+        <div style={{ flex: 1, padding: 20 }}>
+          <h2>Kitchen</h2>
 
-        {kitchenOrders
-          .filter(o => o.status !== "done")
-          .map(o => (
-            <div key={o.orderNumber}>
-              <b>{o.orderNumber}</b>
+          {kitchenOrders
+            .filter(o => o.status !== "done")
+            .map(o => (
+              <div key={o.orderNumber} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+                <b>{o.orderNumber}</b>
 
-              {o.items.map((i, idx) => (
-                <div key={idx}>
-                  {i.name} x{i.qty}
-                  <br />
-                  Size: {i.sizeType}
-                  {i.sizeExtra ? ` (+${i.sizeExtra})` : ""}
-                  <br />
-                  {i.addons?.join(", ")}
-                </div>
-              ))}
+                {o.items.map((i, idx) => (
+                  <div key={idx}>
+                    <b>{i.name}</b> x{i.qty}
+                    <br />
+                    Size: {i.sizeType}
+                    {i.addons?.length ? ` | ${i.addons.join(", ")}` : ""}
+                  </div>
+                ))}
 
-              <button onClick={() => markDone(o.orderNumber)}>
-                Done
-              </button>
-            </div>
-          ))}
-      </div>
+                <h3>₱{o.total}</h3>
+
+                <button onClick={() => markDone(o.orderNumber)}>
+                  Done
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
 
     </div>
   );
