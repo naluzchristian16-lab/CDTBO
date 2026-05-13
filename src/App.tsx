@@ -1,10 +1,9 @@
 import { useMemo, useEffect, useState } from "react";
 
 import { db } from "./firebase";
-
 import {
   collection,
- addDoc,
+  addDoc,
   onSnapshot,
   updateDoc,
   doc
@@ -50,35 +49,34 @@ export default function App() {
   const [discount, setDiscount] = useState("");
   const [cash, setCash] = useState("");
 
-  /* ================= STORAGE ================= */
-  useEffect(() => {
-    const k = localStorage.getItem("kitchenOrders");
-    const o = localStorage.getItem("orders");
-
-    if (k) setKitchenOrders(JSON.parse(k));
-    if (o) setOrders(JSON.parse(o));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("kitchenOrders", JSON.stringify(kitchenOrders));
-  }, [kitchenOrders]);
-
-  useEffect(() => {
-    localStorage.setItem("orders", JSON.stringify(orders));
-  }, [orders]);
-
+  /* ================= INIT DEVICE ================= */
   const initDevice = (id) => {
     localStorage.setItem("deviceId", id);
     setDeviceId(id);
   };
 
-  /* ================= CART KEY ================= */
+  /* ================= FIREBASE LIVE LISTENER ================= */
+  useEffect(() => {
+    const unsubOrders = onSnapshot(collection(db, "orders"), (snap) => {
+      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+
+    const unsubKitchen = onSnapshot(collection(db, "kitchenOrders"), (snap) => {
+      setKitchenOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => {
+      unsubOrders();
+      unsubKitchen();
+    };
+  }, []);
+
+  /* ================= CART ================= */
   const makeKey = (item) => {
     const addons = item.addons ? [...item.addons].sort().join("|") : "";
     return `${item.id}-${item.sizeType}-${item.sizeExtra}-${addons}`;
   };
 
-  /* ================= ADD TO CART ================= */
   const addToCart = (item, sizeType, sizeExtra = 0) => {
     setCart(prev => {
       const newItem = {
@@ -101,7 +99,6 @@ export default function App() {
     });
   };
 
-  /* ================= QTY ================= */
   const updateQty = (idx, delta) => {
     setCart(prev => {
       const copy = [...prev];
@@ -111,7 +108,6 @@ export default function App() {
     });
   };
 
-  /* ================= EXTRA SHOT ================= */
   const toggleExtraShot = (idx) => {
     setCart(prev => {
       const copy = [...prev];
@@ -150,8 +146,8 @@ export default function App() {
   const orderNumber = () =>
     `${deviceId}-${Date.now()}`;
 
-  /* ================= CHECKOUT (FIXED) ================= */
-  const checkout = () => {
+  /* ================= CHECKOUT ================= */
+  const checkout = async () => {
     if (!cart.length) return;
 
     const order = {
@@ -163,32 +159,23 @@ export default function App() {
       discount: Number(discount || 0),
       cash: Number(cash || 0),
       total,
-      status: "ongoing"
+      status: "ongoing",
+      createdAt: Date.now()
     };
 
-    setOrders(prev => [order, ...prev]);
-    setKitchenOrders(prev => [order, ...prev]);
-    setCart([]);
+    await addDoc(collection(db, "orders"), order);
+    await addDoc(collection(db, "kitchenOrders"), order);
 
-    // AUTO CLEAR FIELDS
+    setCart([]);
     setCash("");
     setDiscount("");
     setDeliveryFee("");
   };
 
   /* ================= DONE ================= */
-  const markDone = (id) => {
-    setKitchenOrders(prev =>
-      prev.map(o =>
-        o.orderNumber === id ? { ...o, status: "done" } : o
-      )
-    );
-
-    setOrders(prev =>
-      prev.map(o =>
-        o.orderNumber === id ? { ...o, status: "done" } : o
-      )
-    );
+  const markDone = async (id) => {
+    await updateDoc(doc(db, "orders", id), { status: "done" });
+    await updateDoc(doc(db, "kitchenOrders", id), { status: "done" });
   };
 
   const doneOrders = orders.filter(o => o.status === "done");
@@ -275,34 +262,30 @@ export default function App() {
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-  <div key={idx} style={{ marginBottom: 10, border: "1px solid #eee", padding: 8 }}>
-    
-    <b>{i.name}</b>
+              <div key={idx} style={{ border: "1px solid #eee", padding: 8, marginBottom: 10 }}>
+                <b>{i.name}</b>
 
-    <div style={{ fontSize: 12, color: "#555" }}>
-      Size: {i.sizeType}
-      {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
-    </div>
+                <div>Size: {i.sizeType} {i.sizeExtra > 0 && `(₱${i.sizeExtra})`}</div>
 
-    <div>
-      Qty: {i.qty}
-      <button onClick={() => updateQty(idx, -1)}>-</button>
-      <button onClick={() => updateQty(idx, 1)}>+</button>
-    </div>
+                <div>
+                  Qty: {i.qty}
+                  <button onClick={() => updateQty(idx, -1)}>-</button>
+                  <button onClick={() => updateQty(idx, 1)}>+</button>
+                </div>
 
-    {i.addons?.length > 0 && (
-      <div style={{ color: "green", fontSize: 12 }}>
-        Add-ons: {i.addons.join(", ")}
-      </div>
-    )}
+                {i.addons?.length > 0 && (
+                  <div style={{ color: "green" }}>
+                    {i.addons.join(", ")}
+                  </div>
+                )}
 
-    <div>₱{computeItem(i)}</div>
+                <div>₱{computeItem(i)}</div>
 
-    <button onClick={() => toggleExtraShot(idx)}>
-      Extra Shot
-    </button>
-  </div>
-))}
+                <button onClick={() => toggleExtraShot(idx)}>
+                  Extra Shot
+                </button>
+              </div>
+            ))}
 
             <hr />
 
@@ -348,28 +331,17 @@ export default function App() {
           {kitchenOrders
             .filter(o => o.status !== "done")
             .map(o => (
-              <div key={o.orderNumber}>
+              <div key={o.id}>
                 <b>{o.orderNumber}</b>
 
                 {o.items.map((i, idx) => (
-  <div key={idx} style={{ marginBottom: 8 }}>
-    
-    <b>{i.name}</b> x{i.qty}
+                  <div key={idx}>
+                    {i.name} x{i.qty} ({i.sizeType})
+                    {i.addons?.length ? ` | ${i.addons.join(", ")}` : ""}
+                  </div>
+                ))}
 
-    <div style={{ fontSize: 12, color: "#555" }}>
-      Size: {i.sizeType}
-      {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
-    </div>
-
-    {i.addons?.length > 0 && (
-      <div style={{ fontSize: 12, color: "green" }}>
-        Add-ons: {i.addons.join(", ")}
-      </div>
-    )}
-  </div>
-))}
-
-                <button onClick={() => markDone(o.orderNumber)}>
+                <button onClick={() => markDone(o.id)}>
                   Done
                 </button>
               </div>
@@ -383,37 +355,18 @@ export default function App() {
           <h2>Completed Orders</h2>
 
           {doneOrders.map(o => (
-            <div key={o.orderNumber} style={{ border: "1px solid #ddd", padding: 12, marginBottom: 10 }}>
+            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
               <b>{o.orderNumber}</b>
               <div>Type: {o.orderType}</div>
 
-              <div style={{ background: "#f5f5f5", padding: 8 }}>
-                {o.items.map((i, idx) => (
-  <div key={idx} style={{ marginBottom: 6 }}>
-    <b>{i.name}</b> x{i.qty}
+              {o.items.map((i, idx) => (
+                <div key={idx}>
+                  {i.name} x{i.qty}
+                </div>
+              ))}
 
-    <div style={{ fontSize: 12, color: "#555" }}>
-      Size: {i.sizeType}
-      {i.sizeExtra > 0 && ` (+₱${i.sizeExtra})`}
-    </div>
-
-    {i.addons?.length > 0 && (
-      <div style={{ fontSize: 12, color: "green" }}>
-        Add-ons: {i.addons.join(", ")}
-      </div>
-    )}
-  </div>
-))}
-              </div>
-
-              {o.orderType === "delivery" && (
-                <div>Delivery Fee: ₱{o.deliveryFee}</div>
-              )}
-
-              <div>Discount: ₱{o.discount}</div>
+              <div>Total: ₱{o.total}</div>
               <div>Cash: ₱{o.cash}</div>
-
-              <h3>Total: ₱{o.total}</h3>
               <div>Change: ₱{o.cash - o.total}</div>
             </div>
           ))}
