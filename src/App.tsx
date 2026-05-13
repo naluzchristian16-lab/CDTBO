@@ -329,19 +329,49 @@ export default function App() {
       )}
 
       {/* ADMIN */}
-      {view === "admin" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Completed Orders</h2>
+{view === "admin" && (
+  <div style={{ flex: 1, padding: 20 }}>
+    <h2>Completed Orders</h2>
 
-          {doneOrders.map(o => (
-            <div key={o.orderNumber}>
-              <b>{o.orderNumber}</b>
-              <h3>₱{o.total}</h3>
+    {doneOrders.map(o => (
+      <div key={o.orderNumber} style={{ border: "1px solid #ddd", margin: 10, padding: 10 }}>
+        
+        <b>Order:</b> {o.orderNumber}
+        <br />
+        <b>Device:</b> {o.deviceId}
+        <br />
+        <b>Type:</b> {o.orderType}
+
+        <hr />
+
+        {/* ITEMS BREAKDOWN */}
+        {o.items.map((i, idx) => (
+          <div key={idx} style={{ marginBottom: 6 }}>
+            <b>{i.name}</b> x{i.qty}
+            <div style={{ fontSize: 12, color: "#555" }}>
+              Size: {i.sizeType || i.size}
+              {i.sizeExtra ? ` (+₱${i.sizeExtra})` : ""}
             </div>
-          ))}
-        </div>
-      )}
 
+            {i.addons?.length > 0 && (
+              <div style={{ fontSize: 12, color: "green" }}>
+                Add-ons: {i.addons.join(", ")}
+              </div>
+            )}
+          </div>
+        ))}
+
+        <hr />
+
+        <div>Delivery Fee: ₱{o.deliveryFee || 0}</div>
+        <div>Discount: ₱{o.discount || 0}</div>
+
+        <h3>Total: ₱{o.total}</h3>
+
+      </div>
+    ))}
+  </div>
+)}
     </div>
   );
 }
