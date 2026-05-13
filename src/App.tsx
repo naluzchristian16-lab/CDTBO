@@ -1,5 +1,15 @@
 import { useMemo, useEffect, useState } from "react";
 
+import { db } from "./firebase";
+
+import {
+  collection,
+ addDoc,
+  onSnapshot,
+  updateDoc,
+  doc
+} from "firebase/firestore";
+
 /* ================= CATEGORIES ================= */
 const categories = [
   "All Products",
