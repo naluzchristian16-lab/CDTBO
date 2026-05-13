@@ -44,6 +44,7 @@ export default function App() {
   useEffect(() => {
     const k = localStorage.getItem("kitchenOrders");
     const o = localStorage.getItem("orders");
+
     if (k) setKitchenOrders(JSON.parse(k));
     if (o) setOrders(JSON.parse(o));
   }, []);
@@ -62,36 +63,41 @@ export default function App() {
     setDeviceId(id);
   };
 
-  /* ================= CART ================= */
+  /* ================= CART KEY (IMPORTANT FIX) ================= */
   const makeKey = (item) => {
-  const addons = item.addons ? [...item.addons].sort().join("|") : "";
-  return `${item.id}-${item.sizeType}-${addons}`;
-};
+    const addons = item.addons ? [...item.addons].sort().join("|") : "";
+    return `${item.id}-${item.sizeType}-${item.sizeExtra}-${addons}`;
+  };
 
-const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
-  setCart(prev => {
-    const newItem = {
-      ...item,
-      qty: 1,
-      sizeType,
-      sizeExtra,
-      addons: [...addons]
-    };
+  /* ================= ADD TO CART ================= */
+  const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
+    setCart(prev => {
+      const newItem = {
+        ...item,
+        qty: 1,
+        sizeType,
+        sizeExtra,
+        addons: [...addons]
+      };
 
-    const newKey = makeKey(newItem);
+      const key = makeKey(newItem);
 
-    const i = prev.findIndex(p => makeKey(p) === newKey);
+      const idx = prev.findIndex(p => makeKey(p) === key);
 
-    if (i !== -1) {
-      const copy = [...prev];
-      copy[i].qty += 1;
-      return copy;
-    }
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx] = {
+          ...copy[idx],
+          qty: copy[idx].qty + 1
+        };
+        return copy;
+      }
 
-    return [...prev, newItem];
-  });
-};
+      return [...prev, newItem];
+    });
+  };
 
+  /* ================= QTY ================= */
   const updateQty = (idx, delta) => {
     setCart(prev => {
       const copy = [...prev];
@@ -101,20 +107,21 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
     });
   };
 
-  /* ================= EXTRA SHOT ================= */
+  /* ================= EXTRA SHOT (FIXED IMMUTABLE) ================= */
   const toggleExtraShot = (idx) => {
     setCart(prev => {
       const copy = [...prev];
-      const item = copy[idx];
+      const item = { ...copy[idx] };
 
-      if (!item.addons) item.addons = [];
+      const addons = item.addons ? [...item.addons] : [];
 
-      if (item.addons.includes("Extra Shot")) {
-        item.addons = item.addons.filter(a => a !== "Extra Shot");
+      if (addons.includes("Extra Shot")) {
+        item.addons = addons.filter(a => a !== "Extra Shot");
       } else {
-        item.addons.push("Extra Shot");
+        item.addons = [...addons, "Extra Shot"];
       }
 
+      copy[idx] = item;
       return copy;
     });
   };
@@ -129,15 +136,12 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
 
   const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
 
-  const total =
-    cartTotal +
-    Number(deliveryFee || 0) -
-    Number(discount || 0);
-
+  const total = cartTotal + Number(deliveryFee || 0) - Number(discount || 0);
   const change = cash ? Number(cash) - total : 0;
 
+  /* ================= ORDER NUMBER ================= */
   const orderNumber = () =>
-    `${deviceId}-${Date.now()}`;
+    `${deviceId}-${Date.now()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 
   /* ================= CHECKOUT ================= */
   const checkout = () => {
@@ -158,22 +162,30 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
     setOrders(prev => [order, ...prev]);
     setKitchenOrders(prev => [order, ...prev]);
     setCart([]);
+
+    setCash("");
+    setDiscount("");
+    setDeliveryFee("");
   };
 
+  /* ================= MARK DONE (FIXED SYNC BOTH) ================= */
   const markDone = (id) => {
-  setKitchenOrders(prev =>
-    prev.map(o =>
-      o.orderNumber === id ? { ...o, status: "done" } : o
-    )
-  );
+    setKitchenOrders(prev =>
+      prev.map(o =>
+        o.orderNumber === id ? { ...o, status: "done" } : o
+      )
+    );
 
-  setOrders(prev =>
-    prev.map(o =>
-      o.orderNumber === id ? { ...o, status: "done" } : o
-    )
-  );
-};
+    setOrders(prev =>
+      prev.map(o =>
+        o.orderNumber === id ? { ...o, status: "done" } : o
+      )
+    );
+  };
 
+  const doneOrders = orders.filter(o => o.status === "done");
+
+  /* ================= FILTER ================= */
   const filtered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
@@ -198,10 +210,9 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
   return (
     <div style={{ display: "flex", height: "100vh" }}>
 
-      {/* SIDEBAR + CATEGORIES (RESTORED) */}
+      {/* SIDEBAR */}
       <div style={{ width: 220, padding: 10 }}>
         <h3>Coffee D' Titos</h3>
-        <p>{deviceId}</p>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
         <button onClick={() => setView("kitchen")}>Kitchen</button>
@@ -216,7 +227,6 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
             style={{
               display: "block",
               width: "100%",
-              marginBottom: 5,
               background: category === c ? "#ddd" : "#fff"
             }}
           >
@@ -231,14 +241,14 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
 
           <div style={{ flex: 1, padding: 10 }}>
             <input
+              placeholder="Search"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search"
             />
 
             {filtered.map(p => (
-              <div key={p.id} style={{ marginBottom: 10 }}>
-                {p.name} ₱{p.price} ({p.size})
+              <div key={p.id}>
+                {p.name} ₱{p.price}
 
                 <button onClick={() => addToCart(p, "Malaki", 0)}>
                   Malaki
@@ -256,9 +266,9 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
-              <div key={idx} style={{ marginBottom: 10 }}>
+              <div key={idx}>
                 <b>{i.name}</b>
-                <div>Size: {i.sizeType}</div>
+                <div>{i.sizeType}</div>
 
                 <div>
                   Qty: {i.qty}
@@ -298,14 +308,12 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
           {kitchenOrders
             .filter(o => o.status !== "done")
             .map(o => (
-              <div key={o.orderNumber} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+              <div key={o.orderNumber}>
                 <b>{o.orderNumber}</b>
 
                 {o.items.map((i, idx) => (
                   <div key={idx}>
-                    <b>{i.name}</b> x{i.qty}
-                    <br />
-                    Size: {i.sizeType}
+                    {i.name} x{i.qty} ({i.sizeType})
                     {i.addons?.length ? ` | ${i.addons.join(", ")}` : ""}
                   </div>
                 ))}
@@ -317,6 +325,20 @@ const addToCart = (item, sizeType, sizeExtra = 0, addons = []) => {
                 </button>
               </div>
             ))}
+        </div>
+      )}
+
+      {/* ADMIN */}
+      {view === "admin" && (
+        <div style={{ flex: 1, padding: 20 }}>
+          <h2>Completed Orders</h2>
+
+          {doneOrders.map(o => (
+            <div key={o.orderNumber}>
+              <b>{o.orderNumber}</b>
+              <h3>₱{o.total}</h3>
+            </div>
+          ))}
         </div>
       )}
 
