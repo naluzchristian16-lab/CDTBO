@@ -26,16 +26,175 @@ const categories = [
 
 /* ================= PRODUCTS ================= */
 const products = [
-  { id: 1, name: "Hot Americano", category: "Hot Drinks", size: "12oz", price: 69, coffee: true },
-  { id: 2, name: "Hot Spanish Latte", category: "Hot Drinks", size: "12oz", price: 79, coffee: true },
-  { id: 3, name: "Hot Mocha", category: "Hot Drinks", size: "12oz", price: 79, coffee: true },
-  { id: 4, name: "Hot Caramel Macchiato", category: "Hot Drinks", size: "12oz", price: 89, coffee: true },
+  /* ================= HOT COFFEE (12oz ONLY) ================= */
+  {
+    id: "hot_americano_12oz",
+    name: "Hot Americano",
+    category: "Hot Drinks",
+    coffee: true,
+    singleSize: true,
+    size: { label: "12oz", price: 69 }
+  },
+  {
+    id: "hot_spanish_latte_12oz",
+    name: "Hot Spanish Latte",
+    category: "Hot Drinks",
+    coffee: true,
+    singleSize: true,
+    size: { label: "12oz", price: 79 }
+  },
+  {
+    id: "hot_mocha_12oz",
+    name: "Hot Mocha",
+    category: "Hot Drinks",
+    coffee: true,
+    singleSize: true,
+    size: { label: "12oz", price: 79 }
+  },
+  {
+    id: "hot_caramel_macchiato_12oz",
+    name: "Hot Caramel Macchiato",
+    category: "Hot Drinks",
+    coffee: true,
+    singleSize: true,
+    size: { label: "12oz", price: 89 }
+  },
+  {
+    id: "hot_dirty_matcha_12oz",
+    name: "Hot Dirty Matcha",
+    category: "Matcha Collection",
+    coffee: true,
+    singleSize: true,
+    size: { label: "12oz", price: 89 }
+  },
 
-  { id: 11, name: "Iced Americano", category: "Iced Coffee", size: "16oz", price: 79, coffee: true },
-  { id: 12, name: "Iced Spanish Latte", category: "Iced Coffee", size: "16oz", price: 89, coffee: true },
+  /* ================= ICED COFFEE ================= */
+  {
+    id: "iced_americano",
+    name: "Iced Americano",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 89 },
+      { label: "20oz", price: 99 }
+    ]
+  },
+  {
+    id: "iced_spanish_latte",
+    name: "Iced Spanish Latte",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 89 },
+      { label: "20oz", price: 99 }
+    ]
+  },
+  {
+    id: "iced_mocha",
+    name: "Iced Mocha",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 89 },
+      { label: "20oz", price: 99 }
+    ]
+  },
+  {
+    id: "iced_caramel_macchiato",
+    name: "Iced Caramel Macchiato",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 99 },
+      { label: "20oz", price: 109 }
+    ]
+  },
 
-  { id: 18, name: "Strawberry Milk Drink", category: "Non-Coffee", size: "16oz", price: 79, coffee: false },
-  { id: 25, name: "Iced Matcha Latte", category: "Matcha Collection", size: "16oz", price: 89, coffee: false }
+  /* ================= MATCHA COLLECTION ================= */
+  {
+    id: "iced_matcha_latte",
+    name: "Iced Matcha Latte",
+    category: "Matcha Collection",
+    coffee: false,
+    sizes: [
+      { label: "16oz", price: 89 },
+      { label: "20oz", price: 99 }
+    ]
+  },
+  {
+    id: "iced_dirty_matcha",
+    name: "Iced Dirty Matcha",
+    category: "Matcha Collection",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 99 },
+      { label: "20oz", price: 109 }
+    ]
+  },
+
+  /* ================= NON COFFEE ================= */
+  {
+    id: "strawberry_milk",
+    name: "Strawberry Milk Drink",
+    category: "Non-Coffee",
+    coffee: false,
+    sizes: [
+      { label: "16oz", price: 79 },
+      { label: "20oz", price: 89 }
+    ]
+  },
+  {
+    id: "blueberry_milk",
+    name: "Blueberry Milk Drink",
+    category: "Non-Coffee",
+    coffee: false,
+    sizes: [
+      { label: "16oz", price: 79 },
+      { label: "20oz", price: 89 }
+    ]
+  },
+  {
+    id: "green_apple_soda",
+    name: "Green Apple Soda",
+    category: "Non-Coffee",
+    coffee: false,
+    sizes: [
+      { label: "16oz", price: 69 },
+      { label: "20oz", price: 79 }
+    ]
+  },
+  {
+    id: "blueberry_soda",
+    name: "Blueberry Soda",
+    category: "Non-Coffee",
+    coffee: false,
+    sizes: [
+      { label: "16oz", price: 69 },
+      { label: "20oz", price: 79 }
+    ]
+  },
+
+  /* ================= OATSIDE ================= */
+  {
+    id: "oatside_spanish_latte",
+    name: "Oatside Spanish Latte",
+    category: "Oatside Series",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 99 },
+      { label: "20oz", price: 109 }
+    ]
+  },
+  {
+    id: "oatside_matcha_latte",
+    name: "Oatside Matcha Latte",
+    category: "Oatside Series",
+    coffee: false,
+    sizes: [
+      { label: "16oz", price: 99 },
+      { label: "20oz", price: 109 }
+    ]
+  }
 ];
 
 /* ================= DEVICES ================= */
@@ -135,27 +294,27 @@ export default function App() {
     return `${item.id}-${item.sizeType}-${item.sizeExtra}-${addons}`;
   };
 
-  const addToCart = (item: any, sizeType: string, sizeExtra = 0) => {
-    setCart(prev => {
-      const newItem = {
-        ...item,
-        qty: 1,
-        sizeType,
-        sizeExtra,
-        addons: []
-      };
+  const addToCart = (item: any, sizeLabel: string, price: number) => {
+  setCart(prev => {
+    const newItem = {
+      ...item,
+      qty: 1,
+      sizeType: sizeLabel,
+      price: price,
+      addons: []
+    };
 
-      const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
+    const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
 
-      if (idx !== -1) {
-        const copy = [...prev];
-        copy[idx].qty += 1;
-        return copy;
-      }
+    if (idx !== -1) {
+      const copy = [...prev];
+      copy[idx].qty += 1;
+      return copy;
+    }
 
-      return [...prev, newItem];
-    });
-  };
+    return [...prev, newItem];
+  });
+};
 
   const updateQty = (idx: number, delta: number) => {
     setCart(prev => {
@@ -310,15 +469,37 @@ export default function App() {
             <input placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} />
 
             {filtered.map(p => (
-              <div key={p.id} style={{ border: "1px solid #ddd", padding: 10 }}>
-                <b>{p.name}</b>
-                <div>₱{p.price}</div>
+  <div
+    key={p.id}
+    style={{
+      border: "1px solid #ddd",
+      padding: 10,
+      marginBottom: 10
+    }}
+  >
+    <b>{p.name}</b>
 
-                <button onClick={() => addToCart(p, "Malaki", 0)}>Malaki</button>
-                <button onClick={() => addToCart(p, "Mas Malaki", 10)}>Mas Malaki +10</button>
-              </div>
-            ))}
-          </div>
+    <div style={{ marginTop: 5 }}>
+      {/* SINGLE SIZE */}
+      {p.singleSize ? (
+        <button onClick={() => addToCart(p, p.size.label, p.size.price)}>
+          {p.size.label} ₱{p.size.price}
+        </button>
+      ) : (
+        /* MULTI SIZE */
+        p.sizes.map((s: any) => (
+          <button
+            key={s.label}
+            onClick={() => addToCart(p, s.label, s.price)}
+            style={{ marginRight: 5 }}
+          >
+            {s.label} ₱{s.price}
+          </button>
+        ))
+      )}
+    </div>
+  </div>
+))}
 
           <div style={{ width: 320, padding: 10 }}>
             <h3>Cart</h3>
