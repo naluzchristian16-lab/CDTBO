@@ -1,6 +1,5 @@
 import { useMemo, useEffect, useState } from "react";
 import { db, auth } from "./firebase";
-
 import {
   collection,
   addDoc,
@@ -26,7 +25,7 @@ const categories = [
 
 /* ================= PRODUCTS ================= */
 const products = [
-  /* ================= HOT COFFEE (12oz ONLY) ================= */
+  /* ================= HOT COFFEE ================= */
   {
     id: "hot_americano_12oz",
     name: "Hot Americano",
@@ -62,8 +61,48 @@ const products = [
   {
     id: "hot_dirty_matcha_12oz",
     name: "Hot Dirty Matcha",
-    category: "Matcha Collection",
+    category: "Hot Drinks",
     coffee: true,
+    singleSize: true,
+    size: { label: "12oz", price: 89 }
+  },
+  {
+    id: "hot_matcha_latte_12oz",
+    name: "Hot Matcha Latte",
+    category: "Hot Drinks",
+    coffee: false,
+    singleSize: true,
+    size: { label: "12oz", price: 79 }
+  },
+  {
+    id: "hot_strawberry_dirty_matcha_12oz",
+    name: "Hot Strawberry Dirty Matcha",
+    category: "Hot Drinks",
+    coffee: false,
+    singleSize: true,
+    size: { label: "12oz", price: 99 }
+  },
+  {
+    id: "hot_strawberry_mocha_12oz",
+    name: "Hot Strawberry Mocha",
+    category: "Hot Drinks",
+    coffee: true,
+    singleSize: true,
+    size: { label: "12oz", price: 89 }
+  },
+  {
+    id: "hot_strawberry_latte_12oz",
+    name: "Hot Strawberry Latte",
+    category: "Hot Drinks",
+    coffee: false,
+    singleSize: true,
+    size: { label: "12oz", price: 89 }
+  },
+  {
+    id: "hot_strawberry_matcha_12oz",
+    name: "Hot Strawberry Matcha",
+    category: "Hot Drinks",
+    coffee: false,
     singleSize: true,
     size: { label: "12oz", price: 89 }
   },
@@ -72,6 +111,16 @@ const products = [
   {
     id: "iced_americano",
     name: "Iced Americano",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 89 },
+      { label: "20oz", price: 99 }
+    ]
+  },
+  {
+    id: "iced_americano_plus",
+    name: "Iced Americano (Large)",
     category: "Iced Coffee",
     coffee: true,
     sizes: [
@@ -109,68 +158,24 @@ const products = [
       { label: "20oz", price: 109 }
     ]
   },
-
-  /* ================= MATCHA COLLECTION ================= */
   {
-    id: "iced_matcha_latte",
-    name: "Iced Matcha Latte",
-    category: "Matcha Collection",
+    id: "iced_strawberry_latte",
+    name: "Iced Strawberry Latte",
+    category: "Iced Coffee",
     coffee: false,
-    sizes: [
-      { label: "16oz", price: 89 },
-      { label: "20oz", price: 99 }
-    ]
-  },
-  {
-    id: "iced_dirty_matcha",
-    name: "Iced Dirty Matcha",
-    category: "Matcha Collection",
-    coffee: true,
     sizes: [
       { label: "16oz", price: 99 },
       { label: "20oz", price: 109 }
     ]
   },
-
-  /* ================= NON COFFEE ================= */
   {
-    id: "strawberry_milk",
-    name: "Strawberry Milk Drink",
-    category: "Non-Coffee",
-    coffee: false,
+    id: "iced_strawberry_mocha",
+    name: "Iced Strawberry Mocha",
+    category: "Iced Coffee",
+    coffee: true,
     sizes: [
-      { label: "16oz", price: 79 },
-      { label: "20oz", price: 89 }
-    ]
-  },
-  {
-    id: "blueberry_milk",
-    name: "Blueberry Milk Drink",
-    category: "Non-Coffee",
-    coffee: false,
-    sizes: [
-      { label: "16oz", price: 79 },
-      { label: "20oz", price: 89 }
-    ]
-  },
-  {
-    id: "green_apple_soda",
-    name: "Green Apple Soda",
-    category: "Non-Coffee",
-    coffee: false,
-    sizes: [
-      { label: "16oz", price: 69 },
-      { label: "20oz", price: 79 }
-    ]
-  },
-  {
-    id: "blueberry_soda",
-    name: "Blueberry Soda",
-    category: "Non-Coffee",
-    coffee: false,
-    sizes: [
-      { label: "16oz", price: 69 },
-      { label: "20oz", price: 79 }
+      { label: "16oz", price: 99 },
+      { label: "20oz", price: 109 }
     ]
   },
 
@@ -194,28 +199,47 @@ const products = [
       { label: "16oz", price: 99 },
       { label: "20oz", price: 109 }
     ]
+  },
+
+  /* ================= MATCHA ================= */
+  {
+    id: "iced_matcha_latte",
+    name: "Iced Matcha Latte",
+    category: "Matcha Collection",
+    coffee: false,
+    sizes: [
+      { label: "16oz", price: 89 },
+      { label: "20oz", price: 99 }
+    ]
+  },
+  {
+    id: "iced_dirty_matcha",
+    name: "Iced Dirty Matcha",
+    category: "Matcha Collection",
+    coffee: true,
+    sizes: [
+      { label: "16oz", price: 99 },
+      { label: "20oz", price: 109 }
+    ]
   }
 ];
-
 /* ================= DEVICES ================= */
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
 
 export default function App() {
 
-  /* ================= AUTH ================= */
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState(null);
 
-  /* ================= POS ================= */
   const [view, setView] = useState("cashier");
 
   const [deviceId, setDeviceId] = useState(
     localStorage.getItem("deviceId") || ""
   );
 
-  const [orders, setOrders] = useState<any[]>([]);
-  const [cart, setCart] = useState<any[]>([]);
+  const [orders, setOrders] = useState([]);
+  const [cart, setCart] = useState([]);
 
   const [category, setCategory] = useState("All Products");
   const [search, setSearch] = useState("");
@@ -227,48 +251,16 @@ export default function App() {
 
   const [orderCounter, setOrderCounter] = useState(1);
 
-  /* ================= LIVE ORDERS ================= */
+  /* ================= FIRESTORE ================= */
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "orders"), (snap) => {
+    return onSnapshot(collection(db, "orders"), (snap) => {
       setOrders(
-        snap.docs.map(d => ({
-          id: d.id,
-          ...d.data()
-        }))
+        snap.docs.map(d => ({ id: d.id, ...d.data() }))
       );
     });
-
-    return () => unsub();
   }, []);
 
-  /* ================= ORDER COUNTER ================= */
-  useEffect(() => {
-    if (!orders.length || !deviceId) return;
-
-    const today = new Date();
-
-    const dd = String(today.getDate()).padStart(2, "0");
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const yy = String(today.getFullYear()).slice(-2);
-
-    const posCode = deviceId.replace("POS", "P");
-    const prefix = `${mm}${dd}${yy}-${posCode}-`; // FIXED MMDDYY
-
-    const todayOrders = orders.filter((o: any) =>
-      o.orderNumber?.startsWith(prefix)
-    );
-
-    if (todayOrders.length > 0) {
-      const numbers = todayOrders.map((o: any) =>
-        Number(o.orderNumber.split("-")[2])
-      );
-
-      const max = Math.max(...numbers);
-      setOrderCounter(max + 1);
-    }
-  }, [orders, deviceId]);
-
-  /* ================= LOGIN ================= */
+  /* ================= AUTH ================= */
   const login = async () => {
     try {
       const res = await signInWithEmailAndPassword(auth, email, password);
@@ -283,40 +275,38 @@ export default function App() {
     setUser(null);
   };
 
-  const initDevice = (id: string) => {
+  const initDevice = (id) => {
     localStorage.setItem("deviceId", id);
     setDeviceId(id);
   };
 
   /* ================= CART ================= */
-  const makeKey = (item: any) => {
-    const addons = item.addons ? [...item.addons].sort().join("|") : "";
-    return `${item.id}-${item.sizeType}-${item.sizeExtra}-${addons}`;
+  const makeKey = (item) =>
+    `${item.id}-${item.sizeType}-${item.addons?.join("|") || ""}`;
+
+  const addToCart = (item, sizeLabel, price) => {
+    setCart(prev => {
+      const newItem = {
+        ...item,
+        qty: 1,
+        sizeType: sizeLabel,
+        price,
+        addons: []
+      };
+
+      const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
+
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx].qty += 1;
+        return copy;
+      }
+
+      return [...prev, newItem];
+    });
   };
 
-  const addToCart = (item: any, sizeLabel: string, price: number) => {
-  setCart(prev => {
-    const newItem = {
-      ...item,
-      qty: 1,
-      sizeType: sizeLabel,
-      price: price,
-      addons: []
-    };
-
-    const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
-
-    if (idx !== -1) {
-      const copy = [...prev];
-      copy[idx].qty += 1;
-      return copy;
-    }
-
-    return [...prev, newItem];
-  });
-};
-
-  const updateQty = (idx: number, delta: number) => {
+  const updateQty = (idx, delta) => {
     setCart(prev => {
       const copy = [...prev];
       copy[idx].qty += delta;
@@ -325,7 +315,7 @@ export default function App() {
     });
   };
 
-  const toggleExtraShot = (idx: number) => {
+  const toggleExtraShot = (idx) => {
     setCart(prev => {
       const copy = [...prev];
       const item = { ...copy[idx] };
@@ -333,7 +323,7 @@ export default function App() {
       const addons = item.addons || [];
 
       item.addons = addons.includes("Extra Shot")
-        ? addons.filter((a: string) => a !== "Extra Shot")
+        ? addons.filter(a => a !== "Extra Shot")
         : [...addons, "Extra Shot"];
 
       copy[idx] = item;
@@ -341,17 +331,15 @@ export default function App() {
     });
   };
 
-  const computeItem = (item: any) => {
+  /* ================= PRICE ================= */
+  const computeItem = (item) => {
     const base = item.price * item.qty;
-    const size = (item.sizeExtra || 0) * item.qty;
-    const addon = (item.addons?.includes("Extra Shot") ? 10 : 0) * item.qty;
-    return base + size + addon;
+    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
+    return base + addon;
   };
 
-  const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
-
   const total =
-    cartTotal +
+    cart.reduce((a, b) => a + computeItem(b), 0) +
     Number(deliveryFee || 0) -
     Number(discount || 0);
 
@@ -361,19 +349,8 @@ export default function App() {
   const checkout = async () => {
     if (!cart.length) return;
 
-    const now = new Date();
-
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
-
-    const posCode = deviceId.replace("POS", "P");
-    const orderNo = String(orderCounter).padStart(4, "0");
-
-    const finalOrderNumber = `${mm}${dd}${yy}-${posCode}-${orderNo}`;
-
     const order = {
-      orderNumber: finalOrderNumber,
+      orderNumber: `${Date.now()}`,
       deviceId,
       items: cart,
       orderType,
@@ -387,15 +364,13 @@ export default function App() {
 
     await addDoc(collection(db, "orders"), order);
 
-    setOrderCounter(prev => prev + 1);
-
     setCart([]);
     setCash("");
     setDiscount("");
     setDeliveryFee("");
   };
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = async (id, status) => {
     await updateDoc(doc(db, "orders", id), { status });
   };
 
@@ -409,26 +384,12 @@ export default function App() {
   const activeOrders = orders.filter(o => o.status !== "completed");
   const completedOrders = orders.filter(o => o.status === "completed");
 
-  /* ================= KITCHEN FORMAT ================= */
-  const formatTicket = (o: any) => {
-    const items = o.items
-      .map((i: any) => {
-        const size = i.sizeType;
-        const extra = i.addons?.includes("Extra Shot") ? ", Extra Shot" : "";
-        return `${i.name} (${size}${extra}) x${i.qty}`;
-      })
-      .join("\n");
-
-    return `${items}\nType: ${o.orderType}\nTotal Price: ₱${o.total}`;
-  };
-
+  /* ================= LOGIN ================= */
   if (!user) return (
     <div style={{ padding: 40 }}>
-      <h1>CDT POS Login</h1>
-      <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-      <br /><br />
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-      <br /><br />
+      <h1>POS Login</h1>
+      <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} />
       <button onClick={login}>Login</button>
     </div>
   );
@@ -446,7 +407,7 @@ export default function App() {
     <div style={{ display: "flex", height: "100vh" }}>
 
       {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10, borderRight: "1px solid #ddd" }}>
+      <div style={{ width: 220, borderRight: "1px solid #ddd" }}>
         <h3>Coffee D' Titos</h3>
 
         <button onClick={() => setView("cashier")}>Cashier</button>
@@ -457,7 +418,9 @@ export default function App() {
         <hr />
 
         {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>{c}</button>
+          <button key={c} onClick={() => setCategory(c)}>
+            {c}
+          </button>
         ))}
       </div>
 
@@ -465,61 +428,54 @@ export default function App() {
       {view === "cashier" && (
         <div style={{ flex: 1, display: "flex" }}>
 
-          <div style={{ flex: 1, padding: 10 }}>
-            <input placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} />
+          <div style={{ flex: 1 }}>
+            <input
+              placeholder="Search"
+              onChange={e => setSearch(e.target.value)}
+            />
 
             {filtered.map(p => (
-  <div
-    key={p.id}
-    style={{
-      border: "1px solid #ddd",
-      padding: 10,
-      marginBottom: 10
-    }}
-  >
-    <b>{p.name}</b>
+              <div key={p.id} style={{ border: "1px solid #ddd", padding: 10 }}>
 
-    <div style={{ marginTop: 5 }}>
-      {/* SINGLE SIZE */}
-      {p.singleSize ? (
-        <button onClick={() => addToCart(p, p.size.label, p.size.price)}>
-          {p.size.label} ₱{p.size.price}
-        </button>
-      ) : (
-        /* MULTI SIZE */
-        p.sizes.map((s: any) => (
-          <button
-            key={s.label}
-            onClick={() => addToCart(p, s.label, s.price)}
-            style={{ marginRight: 5 }}
-          >
-            {s.label} ₱{s.price}
-          </button>
-        ))
-      )}
-    </div>
-  </div>
-))}
+                <b>{p.name}</b>
 
-          <div style={{ width: 320, padding: 10 }}>
+                <div>
+                  {p.singleSize ? (
+                    <button onClick={() => addToCart(p, p.size.label, p.size.price)}>
+                      {p.size.label} ₱{p.size.price}
+                    </button>
+                  ) : (
+                    p.sizes.map(s => (
+                      <button
+                        key={s.label}
+                        onClick={() => addToCart(p, s.label, s.price)}
+                      >
+                        {s.label} ₱{s.price}
+                      </button>
+                    ))
+                  )}
+                </div>
+
+              </div>
+            ))}
+          </div>
+
+          {/* CART */}
+          <div style={{ width: 300 }}>
             <h3>Cart</h3>
 
             {cart.map((i, idx) => (
               <div key={idx} style={{ border: "1px solid #ddd", padding: 10 }}>
                 <b>{i.name}</b>
-                <div>Qty: {i.qty}</div>
+                <div>{i.sizeType}</div>
 
                 <button onClick={() => updateQty(idx, -1)}>-</button>
                 <button onClick={() => updateQty(idx, 1)}>+</button>
 
                 {i.coffee && (
                   <button onClick={() => toggleExtraShot(idx)}>
-                    {i.addons?.includes("Extra Shot") ? "✓ Extra Shot" : "Extra Shot"}
+                    Extra Shot
                   </button>
-                )}
-
-                {i.addons?.includes("Extra Shot") && (
-                  <div style={{ color: "green" }}>✓ Extra Shot</div>
                 )}
 
                 <div>₱{computeItem(i)}</div>
@@ -529,95 +485,42 @@ export default function App() {
             <h3>Total: ₱{total}</h3>
             <button onClick={checkout}>Checkout</button>
           </div>
+
         </div>
       )}
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-  <div style={{ flex: 1, padding: 20 }}>
-    <h2>Kitchen</h2>
-
-    {activeOrders.map((o) => (
-      <div
-        key={o.id}
-        style={{
-          border: "1px solid #ddd",
-          padding: 12,
-          marginBottom: 12,
-          borderRadius: 6
-        }}
-      >
-        {/* ORDER NUMBER */}
-        <h3 style={{ marginBottom: 8 }}>
-          {o.orderNumber}
-        </h3>
-
-        {/* ITEMS */}
-        <div style={{ marginBottom: 10 }}>
-          {o.items.map((i: any, idx: number) => (
-            <div key={idx} style={{ marginBottom: 4 }}>
-              
-              <b>{i.name}</b>
-
-              {" "}({i.sizeType})
-
-              {i.addons?.includes("Extra Shot") && (
-                <span style={{ fontWeight: "bold" }}>
-                  , Extra Shot
-                </span>
-              )}
-
-              {" "}x{i.qty}
-            </div>
-          ))}
-        </div>
-
-        {/* ORDER TYPE */}
-        <div>
-          Type: <b>{o.orderType}</b>
-        </div>
-
-        {/* TOTAL */}
-        <div>
-          Total Price: <b>₱{o.total}</b>
-        </div>
-
-        <br />
-
-        <button onClick={() => updateStatus(o.id, "completed")}>
-          Complete
-        </button>
-      </div>
-    ))}
-  </div>
-)}
-
-      {/* ADMIN */}
-      {view === "admin" && (
         <div style={{ flex: 1, padding: 20 }}>
-          <h2>Completed Orders</h2>
+          <h2>Kitchen</h2>
 
-          {completedOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10 }}>
+          {activeOrders.map(o => (
+            <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10 }}>
               <h3>{o.orderNumber}</h3>
 
-              <div>Type: {o.orderType}</div>
-              <div>Status: {o.status}</div>
-
-              <hr />
-
-              {o.items.map((i: any, idx: number) => (
+              {o.items.map((i, idx) => (
                 <div key={idx}>
-                  {i.name} x{i.qty} ({i.sizeType})
-                  {i.addons?.includes("Extra Shot") && " ✓ Extra Shot"}
-                  <div>₱{computeItem(i)}</div>
+                  <b>{i.name}</b> ({i.sizeType}) x{i.qty}
                 </div>
               ))}
 
-              <hr />
-              <div>Discount: ₱{o.discount}</div>
-              <div>Delivery Fee: ₱{o.deliveryFee}</div>
-              <h3>Total: ₱{o.total}</h3>
+              <button onClick={() => updateStatus(o.id, "completed")}>
+                Complete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ADMIN */}
+      {view === "admin" && (
+        <div style={{ flex: 1 }}>
+          <h2>Completed Orders</h2>
+
+          {completedOrders.map(o => (
+            <div key={o.id} style={{ border: "1px solid #ddd" }}>
+              <h3>{o.orderNumber}</h3>
+              <div>Total: ₱{o.total}</div>
             </div>
           ))}
         </div>
