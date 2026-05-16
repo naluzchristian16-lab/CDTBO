@@ -23,46 +23,34 @@ const categories = [
   "Oatside Series"
 ];
 
-/* ================= PRODUCTS ================= */
+/* ================= PRODUCTS (FULL LIST) ================= */
 const products = [
-  /* HOT */
-  {
-    id: "hot_americano_12oz",
-    name: "Hot Americano",
-    category: "Hot Drinks",
-    coffee: true,
-    singleSize: true,
-    size: { label: "12oz", price: 69 }
-  },
-  {
-    id: "hot_spanish_latte_12oz",
-    name: "Hot Spanish Latte",
-    category: "Hot Drinks",
-    coffee: true,
-    singleSize: true,
-    size: { label: "12oz", price: 79 }
-  },
-  {
-    id: "hot_mocha_12oz",
-    name: "Hot Mocha",
-    category: "Hot Drinks",
-    coffee: true,
-    singleSize: true,
-    size: { label: "12oz", price: 79 }
-  },
-  {
-    id: "hot_caramel_macchiato_12oz",
-    name: "Hot Caramel Macchiato",
-    category: "Hot Drinks",
-    coffee: true,
-    singleSize: true,
-    size: { label: "12oz", price: 89 }
-  },
+  /* ================= HOT COFFEE ================= */
+  { id: "hot_americano_12oz", name: "Hot Americano 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 69 } },
+  { id: "hot_spanish_latte_12oz", name: "Hot Spanish Latte 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 79 } },
+  { id: "hot_mocha_12oz", name: "Hot Mocha 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 79 } },
+  { id: "hot_caramel_macchiato_12oz", name: "Hot Caramel Macchiato 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 89 } },
+  { id: "hot_dirty_matcha_12oz", name: "Hot Dirty Matcha 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 89 } },
+  { id: "hot_matcha_latte_12oz", name: "Hot Matcha Latte 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 79 } },
+  { id: "hot_strawberry_dirty_matcha_12oz", name: "Hot Strawberry Dirty Matcha 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 99 } },
+  { id: "hot_strawberry_mocha_12oz", name: "Hot Strawberry Mocha 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 89 } },
+  { id: "hot_strawberry_latte_12oz", name: "Hot Strawberry Latte 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 89 } },
+  { id: "hot_strawberry_matcha_12oz", name: "Hot Strawberry Matcha 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 89 } },
 
-  /* ICED */
+  /* ================= ICED COFFEE ================= */
   {
     id: "iced_americano",
     name: "Iced Americano",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "Malaki", price: 89 },
+      { label: "Mas Malaki", price: 99 }
+    ]
+  },
+  {
+    id: "iced_americano_20",
+    name: "Iced Americano 20oz",
     category: "Iced Coffee",
     coffee: true,
     sizes: [
@@ -90,8 +78,38 @@ const products = [
       { label: "Mas Malaki", price: 99 }
     ]
   },
+  {
+    id: "iced_caramel_macchiato",
+    name: "Iced Caramel Macchiato",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
+    ]
+  },
+  {
+    id: "iced_strawberry_latte",
+    name: "Iced Strawberry Latte",
+    category: "Iced Coffee",
+    coffee: false,
+    sizes: [
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
+    ]
+  },
+  {
+    id: "iced_strawberry_mocha",
+    name: "Iced Strawberry Mocha",
+    category: "Iced Coffee",
+    coffee: true,
+    sizes: [
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
+    ]
+  },
 
-  /* MATCHA */
+  /* ================= MATCHA ================= */
   {
     id: "iced_matcha_latte",
     name: "Iced Matcha Latte",
@@ -101,10 +119,22 @@ const products = [
       { label: "Malaki", price: 89 },
       { label: "Mas Malaki", price: 99 }
     ]
+  },
+
+  /* ================= OATSIDE ================= */
+  {
+    id: "oatside_spanish_latte",
+    name: "Oatside Spanish Latte",
+    category: "Oatside Series",
+    coffee: true,
+    sizes: [
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
+    ]
   }
 ];
 
-/* ================= DEVICES ================= */
+/* ================= DEVICE IDS ================= */
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
 
 export default function App() {
@@ -113,10 +143,7 @@ export default function App() {
   const [user, setUser] = useState(null);
 
   const [view, setView] = useState("cashier");
-
-  const [deviceId, setDeviceId] = useState(
-    localStorage.getItem("deviceId") || ""
-  );
+  const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
 
   const [orders, setOrders] = useState([]);
   const [cart, setCart] = useState([]);
@@ -138,12 +165,8 @@ export default function App() {
 
   /* ================= AUTH ================= */
   const login = async () => {
-    try {
-      const res = await signInWithEmailAndPassword(auth, email, password);
-      setUser(res.user);
-    } catch {
-      alert("Invalid login");
-    }
+    const res = await signInWithEmailAndPassword(auth, email, password);
+    setUser(res.user);
   };
 
   const logout = async () => {
@@ -158,19 +181,13 @@ export default function App() {
 
   /* ================= CART ================= */
   const makeKey = (item) => {
-    const addons = item.addons ? [...item.addons].sort().join("|") : "";
+    const addons = item.addons ? item.addons.join("|") : "";
     return `${item.id}-${item.sizeType}-${addons}`;
   };
 
   const addToCart = (item, sizeLabel, price) => {
     setCart(prev => {
-      const newItem = {
-        ...item,
-        qty: 1,
-        sizeType: sizeLabel,
-        price,
-        addons: []
-      };
+      const newItem = { ...item, qty: 1, sizeType: sizeLabel, price, addons: [] };
 
       const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
 
@@ -198,11 +215,9 @@ export default function App() {
       const copy = [...prev];
       const item = { ...copy[idx] };
 
-      const addons = item.addons || [];
-
-      item.addons = addons.includes("Extra Shot")
-        ? addons.filter(a => a !== "Extra Shot")
-        : [...addons, "Extra Shot"];
+      item.addons = item.addons?.includes("Extra Shot")
+        ? item.addons.filter(a => a !== "Extra Shot")
+        : [...(item.addons || []), "Extra Shot"];
 
       copy[idx] = item;
       return copy;
@@ -215,15 +230,17 @@ export default function App() {
     return base + addon;
   };
 
+  const subtotal = cart.reduce((a, b) => a + computeItem(b), 0);
+
   const total =
-    cart.reduce((a, b) => a + computeItem(b), 0) +
+    subtotal +
     Number(deliveryFee || 0) -
     Number(discount || 0);
 
+  const change = cash ? Number(cash) - total : 0;
+
   /* ================= CHECKOUT ================= */
   const checkout = async () => {
-    if (!cart.length) return;
-
     const order = {
       orderNumber: `${Date.now()}`,
       deviceId,
@@ -245,10 +262,6 @@ export default function App() {
     setDeliveryFee("");
   };
 
-  const updateStatus = async (id, status) => {
-    await updateDoc(doc(db, "orders", id), { status });
-  };
-
   const filtered = useMemo(() => {
     return products.filter(p =>
       (category === "All Products" || p.category === category) &&
@@ -259,7 +272,7 @@ export default function App() {
   const activeOrders = orders.filter(o => o.status !== "completed");
   const completedOrders = orders.filter(o => o.status === "completed");
 
-  /* ================= UI GUARDS ================= */
+  /* ================= UI ================= */
   if (!user) {
     return (
       <div style={{ padding: 40 }}>
@@ -274,17 +287,15 @@ export default function App() {
   if (!deviceId) {
     return (
       <div style={{ padding: 40 }}>
-        <h2>Select POS</h2>
         {DEVICE_IDS.map(id => (
-          <button key={id} onClick={() => initDevice(id)}>
-            {id}
-          </button>
+          <div key={id}>
+            <button onClick={() => initDevice(id)}>{id}</button>
+          </div>
         ))}
       </div>
     );
   }
 
-  /* ================= MAIN ================= */
   return (
     <div style={{ display: "flex", height: "100vh" }}>
 
@@ -300,9 +311,11 @@ export default function App() {
         <hr />
 
         {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>
-            {c}
-          </button>
+          <div key={c}>
+            <button style={{ width: "100%" }} onClick={() => setCategory(c)}>
+              {c}
+            </button>
+          </div>
         ))}
       </div>
 
@@ -311,171 +324,101 @@ export default function App() {
         <div style={{ flex: 1, display: "flex" }}>
 
           <div style={{ flex: 1 }}>
-            <input
-              placeholder="Search"
-              onChange={e => setSearch(e.target.value)}
-            />
+            <input onChange={e => setSearch(e.target.value)} placeholder="Search" />
 
             {filtered.map(p => (
               <div key={p.id} style={{ border: "1px solid #ddd", padding: 10 }}>
-                <b>{p.name}</b>
 
-                {p.singleSize ? (
-                  <button onClick={() => addToCart(p, p.size.label, p.size.price)}>
-                    {p.size.label} ₱{p.size.price}
-                  </button>
-                ) : (
-                  p.sizes.map(s => (
-                    <button key={s.label} onClick={() => addToCart(p, s.label, s.price)}>
-                      {s.label} ₱{s.price}
+                <div style={{ fontWeight: "bold" }}>{p.name}</div>
+
+                <div>
+                  {p.singleSize ? (
+                    <button onClick={() => addToCart(p, p.size.label, p.size.price)}>
+                      {p.size.label} ₱{p.size.price}
                     </button>
-                  ))
-                )}
+                  ) : (
+                    <div>
+                      {p.sizes.map(s => (
+                        <div key={s.label}>
+                          <button onClick={() => addToCart(p, s.label, s.price)}>
+                            {s.label} ₱{s.price}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
             ))}
           </div>
 
           {/* CART */}
-<div style={{ width: 300, padding: 10, borderLeft: "1px solid #ddd" }}>
-  <h3>Cart</h3>
+          <div style={{ width: 320, borderLeft: "1px solid #ddd", padding: 10 }}>
 
-  {/* ORDER TYPE */}
-  <div style={{ marginBottom: 10 }}>
-    <b>Order Type</b><br />
-    <select value={orderType} onChange={e => setOrderType(e.target.value)}>
-      <option value="dine-in">Dine-in</option>
-      <option value="pickup">Pickup</option>
-      <option value="delivery">Delivery</option>
-    </select>
-  </div>
+            <h3>Cart</h3>
 
-  {/* DISCOUNT */}
-  <div>
-    <b>Discount</b><br />
-    <input
-      placeholder="0"
-      value={discount}
-      onChange={e => setDiscount(e.target.value)}
-      style={{ width: "100%" }}
-    />
-  </div>
+            <div>
+              Order Type:
+              <select value={orderType} onChange={e => setOrderType(e.target.value)}>
+                <option value="dine-in">Dine-in</option>
+                <option value="pickup">Pickup</option>
+                <option value="delivery">Delivery</option>
+              </select>
+            </div>
 
-  {/* CASH */}
-  <div style={{ marginBottom: 10 }}>
-    <b>Cash Tendered</b><br />
-    <input
-      placeholder="0"
-      value={cash}
-      onChange={e => setCash(e.target.value)}
-      style={{ width: "100%" }}
-    />
-  </div>
+            <input placeholder="Discount" value={discount} onChange={e => setDiscount(e.target.value)} />
+            <input placeholder="Cash" value={cash} onChange={e => setCash(e.target.value)} />
 
-  <hr />
+            <hr />
 
-  {cart.length === 0 && (
-    <div style={{ color: "#888" }}>Empty cart</div>
-  )}
+            {cart.map((i, idx) => (
+              <div key={idx} style={{ border: "1px solid #ddd", padding: 10 }}>
 
-  {cart.map((i, idx) => (
-    <div key={idx} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
-      
-      {/* NAME */}
-      <b>{i.name}</b>
+                <b>{i.name}</b>
+                <div>{i.sizeType}</div>
 
-      {/* SIZE */}
-      <div style={{ fontSize: 13 }}>
-        Size: {i.sizeType}
-      </div>
+                {i.addons?.includes("Extra Shot") && (
+                  <div style={{ color: "green" }}>+ Extra Shot</div>
+                )}
 
-      {/* 🔥 EXTRA SHOT INDICATOR FIX */}
-      {i.addons?.includes("Extra Shot") && (
-        <div style={{ color: "green", fontWeight: "bold", fontSize: 13 }}>
-          + Extra Shot (₱10)
+                <button onClick={() => updateQty(idx, -1)}>-</button>
+                <button onClick={() => updateQty(idx, 1)}>+</button>
+
+                {i.coffee && (
+                  <button onClick={() => toggleExtraShot(idx)}>
+                    Extra Shot
+                  </button>
+                )}
+
+                <div>₱{computeItem(i)}</div>
+
+              </div>
+            ))}
+
+            <h3>Total: ₱{total}</h3>
+            <div>Change: ₱{change}</div>
+
+            <button onClick={checkout} style={{ width: "100%" }}>
+              Checkout
+            </button>
+
+          </div>
+
         </div>
       )}
 
-      {/* QTY */}
-      <div style={{ marginTop: 5 }}>
-        <button onClick={() => updateQty(idx, -1)}>-</button>
-        <span style={{ margin: "0 10px" }}>{i.qty}</span>
-        <button onClick={() => updateQty(idx, 1)}>+</button>
-      </div>
-
-      {/* EXTRA SHOT BUTTON */}
-      {i.coffee && (
-        <button
-          onClick={() => toggleExtraShot(idx)}
-          style={{
-            marginTop: 8,
-            background: i.addons?.includes("Extra Shot") ? "#4caf50" : "#fff",
-            color: i.addons?.includes("Extra Shot") ? "#fff" : "#000",
-            border: "1px solid #ddd",
-            padding: "4px 8px"
-          }}
-        >
-          {i.addons?.includes("Extra Shot")
-            ? "✓ Extra Shot Added"
-            : "Add Extra Shot (+₱10)"}
-        </button>
-      )}
-
-      {/* ITEM TOTAL */}
-      <div style={{ marginTop: 8, fontWeight: "bold" }}>
-        ₱{computeItem(i)}
-      </div>
-    </div>
-  ))}
-
-  <hr />
-
-  {/* TOTAL BREAKDOWN */}
-  <div>
-    <div>Subtotal: ₱{cart.reduce((a,b)=>a+computeItem(b),0)}</div>
-    <div>Discount: -₱{discount || 0}</div>
-    <div>Delivery Fee: +₱{deliveryFee || 0}</div>
-  </div>
-
-  <h3>Total: ₱{total}</h3>
-
-  {/* CHANGE */}
-  <div>
-    Change: ₱{cash ? (Number(cash) - total) : 0}
-  </div>
-
-  <button
-    onClick={checkout}
-    style={{
-      width: "100%",
-      padding: 10,
-      background: "black",
-      color: "white",
-      border: "none",
-      marginTop: 10
-    }}
-  >
-    Checkout
-  </button>
-</div>
-
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen</h2>
-
+        <div style={{ flex: 1 }}>
           {activeOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10 }}>
+            <div key={o.id}>
               <h3>{o.orderNumber}</h3>
-
               {o.items.map((i, idx) => (
                 <div key={idx}>
-                  <b>{i.name}</b> ({i.sizeType}) x{i.qty}
+                  {i.name} ({i.sizeType}) x{i.qty}
                 </div>
               ))}
-
-              <button onClick={() => updateStatus(o.id, "completed")}>
-                Complete
-              </button>
             </div>
           ))}
         </div>
@@ -484,10 +427,8 @@ export default function App() {
       {/* ADMIN */}
       {view === "admin" && (
         <div style={{ flex: 1 }}>
-          <h2>Completed Orders</h2>
-
           {completedOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd" }}>
+            <div key={o.id}>
               <h3>{o.orderNumber}</h3>
               <div>Total: ₱{o.total}</div>
             </div>
