@@ -356,7 +356,7 @@ export default function App() {
         .padStart(4, "0");
 
     const finalOrderNumber =
-      `${dd}${mm}${yy}-${posCode}-${orderNo}`;
+  `${mm}${dd}${yy}-${posCode}-${orderNo}`;
 
     const order = {
 
@@ -649,16 +649,31 @@ export default function App() {
                 </div>
 
                 <button
-                  onClick={() =>
-                    addToCart(
-                      p,
-                      "Regular",
-                      0
-                    )
-                  }
-                >
-                  Add
-                </button>
+  onClick={() =>
+    addToCart(
+      p,
+      "Malaki",
+      0
+    )
+  }
+>
+  Malaki
+</button>
+
+<button
+  onClick={() =>
+    addToCart(
+      p,
+      "Mas Malaki",
+      10
+    )
+  }
+  style={{
+    marginLeft: 5
+  }}
+>
+  Mas Malaki +10
+</button>
 
               </div>
 
@@ -869,83 +884,55 @@ export default function App() {
       {view === "kitchen" && (
 
         <div style={{
-          flex: 1,
-          padding: 20
-        }}>
+  background: "#fafafa",
+  padding: 12,
+  borderRadius: 8,
+  marginTop: 10
+}}>
 
-          <h2>
-            Kitchen
-          </h2>
+  {o.items.map(
+    (
+      i: any,
+      idx: number
+    ) => (
 
-          {activeOrders.map(o => (
+      <div
+        key={idx}
+        style={{
+          marginBottom: 6
+        }}
+      >
 
-            <div
-              key={o.id}
-              style={{
-                border:
-                  "1px solid #ddd",
-                padding: 12,
-                marginBottom: 12
-              }}
-            >
+        {i.name}
 
-              <h3>
-                {o.orderNumber}
-              </h3>
+        {" "}({i.sizeType}
 
-              <div>
-                Status:
-                {" "}
-                {o.status}
-              </div>
+        {i.addons?.includes("Extra Shot")
+          ? ", Extra Shot"
+          : ""}
 
-              <br />
+        ) x{i.qty}
 
-              {o.items.map(
-                (
-                  i: any,
-                  idx: number
-                ) => (
+      </div>
 
-                  <div
-                    key={idx}
-                    style={{
-                      marginBottom: 10,
-                      paddingBottom: 10,
-                      borderBottom:
-                        "1px solid #eee"
-                    }}
-                  >
+    )
+  )}
 
-                    <b>
-                      {i.name}
-                    </b>
+  <br />
 
-                    {" "}x{i.qty}
+  <div>
+    Type:
+    {" "}
+    <b>{o.orderType}</b>
+  </div>
 
-                    <div>
-                      Size:
-                      {" "}
-                      {i.sizeType}
-                    </div>
+  <div>
+    Total Price:
+    {" "}
+    <b>₱{o.total}</b>
+  </div>
 
-                    {i.addons?.includes("Extra Shot") && (
-
-                      <div style={{
-                        color: "#4caf50",
-                        fontWeight: "bold"
-                      }}>
-
-                        ✓ Extra Shot
-
-                      </div>
-
-                    )}
-
-                  </div>
-
-                )
-              )}
+</div>
 
               <button
                 onClick={() =>
