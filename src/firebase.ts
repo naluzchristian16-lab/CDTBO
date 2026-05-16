@@ -15,4 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch((err) => {
+  console.log("Firestore persistence error:", err);
+});
 export const auth = getAuth(app);
