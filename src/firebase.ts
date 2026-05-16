@@ -7,12 +7,12 @@ import {
 
 // ── Replace these with your actual Firebase project values ────────────────────
 const firebaseConfig = {
-  apiKey:            import.meta.env."AIzaSyCSSId4EnYdoeoex_-1zLl327kbyWgbbds",
-  authDomain:        import.meta.env."cdtpos-2946a.firebaseapp.com",
-  projectId:         import.meta.env."cdtpos-2946a",
-  storageBucket:     import.meta.env."cdtpos-2946a.firebasestorage.app",
-  messagingSenderId: import.meta.env."952364279531",
-  appId:             import.meta.env."1:952364279531:web:8630a2203c15a7d10340ae",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app  = initializeApp(firebaseConfig);
