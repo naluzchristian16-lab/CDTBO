@@ -23,34 +23,18 @@ const categories = [
   "Oatside Series"
 ];
 
-/* ================= PRODUCTS (FULL LIST) ================= */
+/* ================= PRODUCTS ================= */
 const products = [
-  /* ================= HOT COFFEE ================= */
   { id: "hot_americano_12oz", name: "Hot Americano 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 69 } },
   { id: "hot_spanish_latte_12oz", name: "Hot Spanish Latte 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 79 } },
   { id: "hot_mocha_12oz", name: "Hot Mocha 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 79 } },
   { id: "hot_caramel_macchiato_12oz", name: "Hot Caramel Macchiato 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 89 } },
   { id: "hot_dirty_matcha_12oz", name: "Hot Dirty Matcha 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 89 } },
   { id: "hot_matcha_latte_12oz", name: "Hot Matcha Latte 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 79 } },
-  { id: "hot_strawberry_dirty_matcha_12oz", name: "Hot Strawberry Dirty Matcha 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 99 } },
-  { id: "hot_strawberry_mocha_12oz", name: "Hot Strawberry Mocha 12oz", category: "Hot Drinks", coffee: true, singleSize: true, size: { label: "12oz", price: 89 } },
-  { id: "hot_strawberry_latte_12oz", name: "Hot Strawberry Latte 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 89 } },
-  { id: "hot_strawberry_matcha_12oz", name: "Hot Strawberry Matcha 12oz", category: "Hot Drinks", coffee: false, singleSize: true, size: { label: "12oz", price: 89 } },
 
-  /* ================= ICED COFFEE ================= */
   {
     id: "iced_americano",
     name: "Iced Americano",
-    category: "Iced Coffee",
-    coffee: true,
-    sizes: [
-      { label: "Malaki", price: 89 },
-      { label: "Mas Malaki", price: 99 }
-    ]
-  },
-  {
-    id: "iced_americano_20",
-    name: "Iced Americano 20oz",
     category: "Iced Coffee",
     coffee: true,
     sizes: [
@@ -77,64 +61,9 @@ const products = [
       { label: "Malaki", price: 89 },
       { label: "Mas Malaki", price: 99 }
     ]
-  },
-  {
-    id: "iced_caramel_macchiato",
-    name: "Iced Caramel Macchiato",
-    category: "Iced Coffee",
-    coffee: true,
-    sizes: [
-      { label: "Malaki", price: 99 },
-      { label: "Mas Malaki", price: 109 }
-    ]
-  },
-  {
-    id: "iced_strawberry_latte",
-    name: "Iced Strawberry Latte",
-    category: "Iced Coffee",
-    coffee: false,
-    sizes: [
-      { label: "Malaki", price: 99 },
-      { label: "Mas Malaki", price: 109 }
-    ]
-  },
-  {
-    id: "iced_strawberry_mocha",
-    name: "Iced Strawberry Mocha",
-    category: "Iced Coffee",
-    coffee: true,
-    sizes: [
-      { label: "Malaki", price: 99 },
-      { label: "Mas Malaki", price: 109 }
-    ]
-  },
-
-  /* ================= MATCHA ================= */
-  {
-    id: "iced_matcha_latte",
-    name: "Iced Matcha Latte",
-    category: "Matcha Collection",
-    coffee: false,
-    sizes: [
-      { label: "Malaki", price: 89 },
-      { label: "Mas Malaki", price: 99 }
-    ]
-  },
-
-  /* ================= OATSIDE ================= */
-  {
-    id: "oatside_spanish_latte",
-    name: "Oatside Spanish Latte",
-    category: "Oatside Series",
-    coffee: true,
-    sizes: [
-      { label: "Malaki", price: 99 },
-      { label: "Mas Malaki", price: 109 }
-    ]
   }
 ];
 
-/* ================= DEVICE IDS ================= */
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
 
 export default function App() {
@@ -231,17 +160,13 @@ export default function App() {
   };
 
   const subtotal = cart.reduce((a, b) => a + computeItem(b), 0);
-
-  const total =
-    subtotal +
-    Number(deliveryFee || 0) -
-    Number(discount || 0);
-
+  const total = subtotal + Number(deliveryFee || 0) - Number(discount || 0);
   const change = cash ? Number(cash) - total : 0;
 
-  /* ================= CHECKOUT ================= */
   const checkout = async () => {
-    const order = {
+    if (!cart.length) return;
+
+    await addDoc(collection(db, "orders"), {
       orderNumber: `${Date.now()}`,
       deviceId,
       items: cart,
@@ -252,9 +177,7 @@ export default function App() {
       total,
       status: "pending",
       createdAt: Date.now()
-    };
-
-    await addDoc(collection(db, "orders"), order);
+    });
 
     setCart([]);
     setCash("");
@@ -329,23 +252,25 @@ export default function App() {
             {filtered.map(p => (
               <div key={p.id} style={{ border: "1px solid #ddd", padding: 10 }}>
 
+                {/* LINE 1 */}
                 <div style={{ fontWeight: "bold" }}>{p.name}</div>
 
-                <div>
+                {/* LINE 2 BUTTONS SIDE BY SIDE */}
+                <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
                   {p.singleSize ? (
                     <button onClick={() => addToCart(p, p.size.label, p.size.price)}>
                       {p.size.label} ₱{p.size.price}
                     </button>
                   ) : (
-                    <div>
-                      {p.sizes.map(s => (
-                        <div key={s.label}>
-                          <button onClick={() => addToCart(p, s.label, s.price)}>
-                            {s.label} ₱{s.price}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    p.sizes.map(s => (
+                      <button
+                        key={s.label}
+                        onClick={() => addToCart(p, s.label, s.price)}
+                        style={{ flex: 1 }}
+                      >
+                        {s.label} ₱{s.price}
+                      </button>
+                    ))
                   )}
                 </div>
 
@@ -379,7 +304,7 @@ export default function App() {
                 <div>{i.sizeType}</div>
 
                 {i.addons?.includes("Extra Shot") && (
-                  <div style={{ color: "green" }}>+ Extra Shot</div>
+                  <div style={{ color: "green" }}>+ Extra Shot (₱10)</div>
                 )}
 
                 <button onClick={() => updateQty(idx, -1)}>-</button>
