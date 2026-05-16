@@ -336,32 +336,127 @@ export default function App() {
           </div>
 
           {/* CART */}
-          <div style={{ width: 300, padding: 10, borderLeft: "1px solid #ddd" }}>
-            <h3>Cart</h3>
+<div style={{ width: 300, padding: 10, borderLeft: "1px solid #ddd" }}>
+  <h3>Cart</h3>
 
-            {cart.map((i, idx) => (
-              <div key={idx} style={{ border: "1px solid #ddd", padding: 10 }}>
-                <b>{i.name}</b>
-                <div>{i.sizeType}</div>
+  {/* ORDER TYPE */}
+  <div style={{ marginBottom: 10 }}>
+    <b>Order Type</b><br />
+    <select value={orderType} onChange={e => setOrderType(e.target.value)}>
+      <option value="dine-in">Dine-in</option>
+      <option value="pickup">Pickup</option>
+      <option value="delivery">Delivery</option>
+    </select>
+  </div>
 
-                <button onClick={() => updateQty(idx, -1)}>-</button>
-                <button onClick={() => updateQty(idx, 1)}>+</button>
+  {/* DISCOUNT */}
+  <div>
+    <b>Discount</b><br />
+    <input
+      placeholder="0"
+      value={discount}
+      onChange={e => setDiscount(e.target.value)}
+      style={{ width: "100%" }}
+    />
+  </div>
 
-                {i.coffee && (
-                  <button onClick={() => toggleExtraShot(idx)}>
-                    Extra Shot
-                  </button>
-                )}
+  {/* CASH */}
+  <div style={{ marginBottom: 10 }}>
+    <b>Cash Tendered</b><br />
+    <input
+      placeholder="0"
+      value={cash}
+      onChange={e => setCash(e.target.value)}
+      style={{ width: "100%" }}
+    />
+  </div>
 
-                <div>₱{computeItem(i)}</div>
-              </div>
-            ))}
+  <hr />
 
-            <h3>Total: ₱{total}</h3>
-            <button onClick={checkout}>Checkout</button>
-          </div>
+  {cart.length === 0 && (
+    <div style={{ color: "#888" }}>Empty cart</div>
+  )}
+
+  {cart.map((i, idx) => (
+    <div key={idx} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 10 }}>
+      
+      {/* NAME */}
+      <b>{i.name}</b>
+
+      {/* SIZE */}
+      <div style={{ fontSize: 13 }}>
+        Size: {i.sizeType}
+      </div>
+
+      {/* 🔥 EXTRA SHOT INDICATOR FIX */}
+      {i.addons?.includes("Extra Shot") && (
+        <div style={{ color: "green", fontWeight: "bold", fontSize: 13 }}>
+          + Extra Shot (₱10)
         </div>
       )}
+
+      {/* QTY */}
+      <div style={{ marginTop: 5 }}>
+        <button onClick={() => updateQty(idx, -1)}>-</button>
+        <span style={{ margin: "0 10px" }}>{i.qty}</span>
+        <button onClick={() => updateQty(idx, 1)}>+</button>
+      </div>
+
+      {/* EXTRA SHOT BUTTON */}
+      {i.coffee && (
+        <button
+          onClick={() => toggleExtraShot(idx)}
+          style={{
+            marginTop: 8,
+            background: i.addons?.includes("Extra Shot") ? "#4caf50" : "#fff",
+            color: i.addons?.includes("Extra Shot") ? "#fff" : "#000",
+            border: "1px solid #ddd",
+            padding: "4px 8px"
+          }}
+        >
+          {i.addons?.includes("Extra Shot")
+            ? "✓ Extra Shot Added"
+            : "Add Extra Shot (+₱10)"}
+        </button>
+      )}
+
+      {/* ITEM TOTAL */}
+      <div style={{ marginTop: 8, fontWeight: "bold" }}>
+        ₱{computeItem(i)}
+      </div>
+    </div>
+  ))}
+
+  <hr />
+
+  {/* TOTAL BREAKDOWN */}
+  <div>
+    <div>Subtotal: ₱{cart.reduce((a,b)=>a+computeItem(b),0)}</div>
+    <div>Discount: -₱{discount || 0}</div>
+    <div>Delivery Fee: +₱{deliveryFee || 0}</div>
+  </div>
+
+  <h3>Total: ₱{total}</h3>
+
+  {/* CHANGE */}
+  <div>
+    Change: ₱{cash ? (Number(cash) - total) : 0}
+  </div>
+
+  <button
+    onClick={checkout}
+    style={{
+      width: "100%",
+      padding: 10,
+      background: "black",
+      color: "white",
+      border: "none",
+      marginTop: 10
+    }}
+  >
+    Checkout
+  </button>
+</div>
 
       {/* KITCHEN */}
       {view === "kitchen" && (
