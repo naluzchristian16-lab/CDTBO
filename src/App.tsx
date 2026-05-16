@@ -52,7 +52,10 @@ export default function App() {
 
   /* ================= POS ================= */
   const [view, setView] = useState("cashier");
-  const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
+
+  const [deviceId, setDeviceId] = useState(
+    localStorage.getItem("deviceId") || ""
+  );
 
   const [orders, setOrders] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
@@ -69,48 +72,128 @@ export default function App() {
 
   /* ================= LIVE ORDERS ================= */
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "orders"), (snap) => {
-      setOrders(
-        snap.docs.map(d => ({
+
+    const unsub = onSnapshot(
+      collection(db, "orders"),
+      (snap) => {
+
+        const data = snap.docs.map(d => ({
           id: d.id,
           ...d.data()
-        }))
-      );
-    });
+        }));
+
+        setOrders(data);
+
+      }
+    );
 
     return () => unsub();
+
   }, []);
+
+  /* ================= ORDER COUNTER ================= */
+  useEffect(() => {
+
+    if (!orders.length || !deviceId) return;
+
+    const today = new Date();
+
+    const dd = String(today.getDate()).padStart(2, "0");
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const yy = String(today.getFullYear()).slice(-2);
+
+    const posCode =
+      deviceId.replace("POS", "P");
+
+    const prefix =
+      `${dd}${mm}${yy}-${posCode}-`;
+
+    const todayOrders =
+      orders.filter((o: any) =>
+        o.orderNumber?.startsWith(prefix)
+      );
+
+    if (todayOrders.length > 0) {
+
+      const numbers = todayOrders.map((o: any) => {
+
+        const split =
+          o.orderNumber.split("-");
+
+        return Number(split[2]);
+
+      });
+
+      const max =
+        Math.max(...numbers);
+
+      setOrderCounter(max + 1);
+
+    }
+
+  }, [orders, deviceId]);
 
   /* ================= LOGIN ================= */
   const login = async () => {
+
     try {
-      const res = await signInWithEmailAndPassword(auth, email, password);
+
+      const res =
+        await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
       setUser(res.user);
+
     } catch {
+
       alert("Invalid login");
+
     }
+
   };
 
+  /* ================= LOGOUT ================= */
   const logout = async () => {
+
     await signOut(auth);
+
     setUser(null);
+
   };
 
   /* ================= DEVICE ================= */
   const initDevice = (id: string) => {
+
     localStorage.setItem("deviceId", id);
+
     setDeviceId(id);
+
   };
 
   /* ================= CART KEY ================= */
   const makeKey = (item: any) => {
-    const addons = item.addons ? item.addons.sort().join("|") : "";
+
+    const addons =
+      item.addons
+        ? [...item.addons].sort().join("|")
+        : "";
+
     return `${item.id}-${item.sizeType}-${item.sizeExtra}-${addons}`;
+
   };
 
   /* ================= ADD TO CART ================= */
-  const addToCart = (item: any, sizeType: string, sizeExtra = 0) => {
+  const addToCart = (
+    item: any,
+    sizeType: string,
+    sizeExtra = 0
+  ) => {
+
     setCart(prev => {
+
       const newItem = {
         ...item,
         qty: 1,
@@ -119,254 +202,894 @@ export default function App() {
         addons: []
       };
 
-      const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
+      const idx =
+        prev.findIndex(
+          p => makeKey(p) === makeKey(newItem)
+        );
 
       if (idx !== -1) {
+
         const copy = [...prev];
+
         copy[idx].qty += 1;
+
         return copy;
+
       }
 
       return [...prev, newItem];
+
     });
+
   };
 
-  /* ================= QTY ================= */
-  const updateQty = (idx: number, delta: number) => {
+  /* ================= UPDATE QTY ================= */
+  const updateQty = (
+    idx: number,
+    delta: number
+  ) => {
+
     setCart(prev => {
+
       const copy = [...prev];
+
       copy[idx].qty += delta;
-      if (copy[idx].qty <= 0) copy.splice(idx, 1);
+
+      if (copy[idx].qty <= 0) {
+
+        copy.splice(idx, 1);
+
+      }
+
       return copy;
+
     });
+
   };
 
   /* ================= EXTRA SHOT ================= */
-  const toggleExtraShot = (idx: number) => {
+  const toggleExtraShot = (
+    idx: number
+  ) => {
+
     setCart(prev => {
+
       const copy = [...prev];
+
       const item = { ...copy[idx] };
 
-      const addons = item.addons || [];
+      const addons =
+        item.addons || [];
 
-      if (addons.includes("Extra Shot")) {
-        item.addons = addons.filter(a => a !== "Extra Shot");
+      if (
+        addons.includes("Extra Shot")
+      ) {
+
+        item.addons =
+          addons.filter(
+            (a: string) =>
+              a !== "Extra Shot"
+          );
+
       } else {
-        item.addons = [...addons, "Extra Shot"];
+
+        item.addons = [
+          ...addons,
+          "Extra Shot"
+        ];
+
       }
 
       copy[idx] = item;
+
       return copy;
+
     });
+
   };
 
   /* ================= COMPUTE ================= */
-  const computeItem = (item: any) => {
-    const base = item.price * item.qty;
-    const size = (item.sizeExtra || 0) * item.qty;
-    const addon = (item.addons?.includes("Extra Shot") ? 10 : 0) * item.qty;
+  const computeItem = (
+    item: any
+  ) => {
+
+    const base =
+      item.price * item.qty;
+
+    const size =
+      (item.sizeExtra || 0)
+      * item.qty;
+
+    const addon =
+      (
+        item.addons?.includes("Extra Shot")
+          ? 10
+          : 0
+      ) * item.qty;
+
     return base + size + addon;
+
   };
 
-  const cartTotal = cart.reduce((a, b) => a + computeItem(b), 0);
+  const cartTotal =
+    cart.reduce(
+      (a, b) =>
+        a + computeItem(b),
+      0
+    );
 
   const total =
     cartTotal +
     Number(deliveryFee || 0) -
     Number(discount || 0);
 
-  const change = cash ? Number(cash) - total : 0;
+  const change =
+    cash
+      ? Number(cash) - total
+      : 0;
 
-  /* ================= CHECKOUT (ORDER NUMBER FIXED) ================= */
+  /* ================= CHECKOUT ================= */
   const checkout = async () => {
+
     if (!cart.length) return;
 
-    const now = new Date();
+    const now =
+      new Date();
 
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
+    const dd =
+      String(now.getDate())
+        .padStart(2, "0");
 
-    const posCode = deviceId.replace("POS", "P");
-    const orderNo = String(orderCounter).padStart(4, "0");
+    const mm =
+      String(now.getMonth() + 1)
+        .padStart(2, "0");
 
-    const finalOrderNumber = `${dd}${mm}${yy}-${posCode}-${orderNo}`;
+    const yy =
+      String(now.getFullYear())
+        .slice(-2);
+
+    const posCode =
+      deviceId.replace("POS", "P");
+
+    const orderNo =
+      String(orderCounter)
+        .padStart(4, "0");
+
+    const finalOrderNumber =
+      `${dd}${mm}${yy}-${posCode}-${orderNo}`;
 
     const order = {
-      orderNumber: finalOrderNumber,
+
+      orderNumber:
+        finalOrderNumber,
+
       deviceId,
+
       items: cart,
+
       orderType,
-      deliveryFee: Number(deliveryFee || 0),
-      discount: Number(discount || 0),
-      cash: Number(cash || 0),
+
+      deliveryFee:
+        Number(deliveryFee || 0),
+
+      discount:
+        Number(discount || 0),
+
+      cash:
+        Number(cash || 0),
+
       total,
+
       status: "pending",
-      createdAt: Date.now()
+
+      createdAt:
+        Date.now()
+
     };
 
-    await addDoc(collection(db, "orders"), order);
+    await addDoc(
+      collection(db, "orders"),
+      order
+    );
 
-    setOrderCounter(prev => prev + 1);
+    setOrderCounter(
+      prev => prev + 1
+    );
 
     setCart([]);
+
     setCash("");
     setDiscount("");
     setDeliveryFee("");
+
   };
 
   /* ================= STATUS ================= */
-  const updateStatus = async (id: string, status: string) => {
-    await updateDoc(doc(db, "orders", id), { status });
+  const updateStatus = async (
+    id: string,
+    status: string
+  ) => {
+
+    await updateDoc(
+      doc(db, "orders", id),
+      { status }
+    );
+
   };
 
   /* ================= FILTER ================= */
-  const filtered = useMemo(() => {
-    return products.filter(p =>
-      (category === "All Products" || p.category === category) &&
-      p.name.toLowerCase().includes(search.toLowerCase())
+  const filtered =
+    useMemo(() => {
+
+      return products.filter(p =>
+
+        (
+          category === "All Products" ||
+          p.category === category
+        )
+
+        &&
+
+        p.name
+          .toLowerCase()
+          .includes(
+            search.toLowerCase()
+          )
+
+      );
+
+    }, [category, search]);
+
+  const activeOrders =
+    orders.filter(
+      o => o.status !== "completed"
     );
-  }, [category, search]);
 
-  const activeOrders = orders.filter(o => o.status !== "completed");
-  const completedOrders = orders.filter(o => o.status === "completed");
+  const completedOrders =
+    orders.filter(
+      o => o.status === "completed"
+    );
 
-  /* ================= LOGIN SCREEN ================= */
+  /* ================= LOGIN ================= */
   if (!user) {
+
     return (
-      <div style={{ padding: 40 }}>
-        <h1>CDT POS Login</h1>
 
-        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+      <div style={{
+        padding: 40
+      }}>
+
+        <h1>
+          CDT POS Login
+        </h1>
+
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={e =>
+            setEmail(
+              e.target.value
+            )
+          }
+        />
+
         <br /><br />
 
-        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e =>
+            setPassword(
+              e.target.value
+            )
+          }
+        />
+
         <br /><br />
 
-        <button onClick={login}>Login</button>
+        <button onClick={login}>
+          Login
+        </button>
+
       </div>
+
     );
+
   }
 
-  /* ================= DEVICE SELECT ================= */
+  /* ================= DEVICE ================= */
   if (!deviceId) {
+
     return (
-      <div style={{ padding: 40 }}>
-        <h2>Select POS</h2>
+
+      <div style={{
+        padding: 40
+      }}>
+
+        <h2>
+          Select POS
+        </h2>
+
         {DEVICE_IDS.map(id => (
-          <button key={id} onClick={() => initDevice(id)}>
+
+          <button
+            key={id}
+            onClick={() =>
+              initDevice(id)
+            }
+          >
             {id}
           </button>
+
         ))}
+
       </div>
+
     );
+
   }
 
   /* ================= MAIN UI ================= */
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+
+    <div style={{
+      display: "flex",
+      height: "100vh"
+    }}>
 
       {/* SIDEBAR */}
-      <div style={{ width: 220, padding: 10, borderRight: "1px solid #ddd" }}>
-        <h3>Coffee D' Titos</h3>
+      <div style={{
+        width: 220,
+        padding: 10,
+        borderRight:
+          "1px solid #ddd"
+      }}>
 
-        <button onClick={() => setView("cashier")}>Cashier</button>
-        <button onClick={() => setView("kitchen")}>Kitchen</button>
-        <button onClick={() => setView("admin")}>Admin</button>
-        <button onClick={logout}>Logout</button>
+        <h2>
+          Coffee D' Titos
+        </h2>
+
+        <button
+          onClick={() =>
+            setView("cashier")
+          }
+        >
+          Cashier
+        </button>
+
+        <button
+          onClick={() =>
+            setView("kitchen")
+          }
+        >
+          Kitchen
+        </button>
+
+        <button
+          onClick={() =>
+            setView("admin")
+          }
+        >
+          Admin
+        </button>
+
+        <button onClick={logout}>
+          Logout
+        </button>
 
         <hr />
 
         {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}>
+
+          <button
+            key={c}
+            onClick={() =>
+              setCategory(c)
+            }
+            style={{
+              display: "block",
+              width: "100%",
+              marginBottom: 5,
+              background:
+                category === c
+                  ? "#ddd"
+                  : "#fff"
+            }}
+          >
             {c}
           </button>
+
         ))}
+
       </div>
 
       {/* CASHIER */}
       {view === "cashier" && (
-        <div style={{ flex: 1, display: "flex" }}>
+
+        <div style={{
+          flex: 1,
+          display: "flex"
+        }}>
 
           {/* PRODUCTS */}
-          <div style={{ flex: 1, padding: 10 }}>
-            <input placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} />
+          <div style={{
+            flex: 1,
+            padding: 10
+          }}>
+
+            <input
+              placeholder="Search"
+              value={search}
+              onChange={e =>
+                setSearch(
+                  e.target.value
+                )
+              }
+            />
 
             {filtered.map(p => (
-              <div key={p.id} style={{ border: "1px solid #ddd", padding: 10 }}>
-                <b>{p.name}</b> ₱{p.price}
 
-                <button onClick={() => addToCart(p, "Regular", 0)}>Add</button>
+              <div
+                key={p.id}
+                style={{
+                  border:
+                    "1px solid #ddd",
+                  padding: 10,
+                  marginBottom: 10
+                }}
+              >
+
+                <b>
+                  {p.name}
+                </b>
+
+                <div>
+                  ₱{p.price}
+                </div>
+
+                <button
+                  onClick={() =>
+                    addToCart(
+                      p,
+                      "Regular",
+                      0
+                    )
+                  }
+                >
+                  Add
+                </button>
+
               </div>
+
             ))}
+
           </div>
 
           {/* CART */}
-          <div style={{ width: 320, padding: 10 }}>
-            <h3>Cart</h3>
+          <div style={{
+            width: 320,
+            padding: 10,
+            borderLeft:
+              "1px solid #ddd"
+          }}>
+
+            <h3>
+              Cart
+            </h3>
 
             {cart.map((i, idx) => (
-              <div key={idx} style={{ border: "1px solid #ddd", padding: 10 }}>
-                <b>{i.name}</b>
 
-                <div>Qty: {i.qty}</div>
+              <div
+                key={idx}
+                style={{
+                  border:
+                    "1px solid #ddd",
+                  padding: 10,
+                  marginBottom: 10
+                }}
+              >
 
-                <button onClick={() => updateQty(idx, -1)}>-</button>
-                <button onClick={() => updateQty(idx, 1)}>+</button>
+                <b>
+                  {i.name}
+                </b>
+
+                <div>
+                  Qty:
+                  {" "}
+                  {i.qty}
+                </div>
+
+                <button
+                  onClick={() =>
+                    updateQty(idx, -1)
+                  }
+                >
+                  -
+                </button>
+
+                <button
+                  onClick={() =>
+                    updateQty(idx, 1)
+                  }
+                >
+                  +
+                </button>
+
+                <br /><br />
 
                 {i.coffee && (
-                  <button onClick={() => toggleExtraShot(idx)}>
-                    Extra Shot
+
+                  <button
+                    onClick={() =>
+                      toggleExtraShot(idx)
+                    }
+                    style={{
+                      background:
+                        i.addons?.includes("Extra Shot")
+                          ? "#4caf50"
+                          : "#fff",
+
+                      color:
+                        i.addons?.includes("Extra Shot")
+                          ? "#fff"
+                          : "#000",
+
+                      border:
+                        "1px solid #ddd"
+                    }}
+                  >
+
+                    {i.addons?.includes("Extra Shot")
+                      ? "✓ Extra Shot"
+                      : "Extra Shot"}
+
                   </button>
+
                 )}
 
-                <div>₱{computeItem(i)}</div>
+                {i.addons?.includes("Extra Shot") && (
+
+                  <div style={{
+                    marginTop: 5,
+                    color: "#4caf50",
+                    fontWeight: "bold"
+                  }}>
+
+                    ✓ With Extra Shot
+
+                  </div>
+
+                )}
+
+                <div style={{
+                  marginTop: 10
+                }}>
+
+                  ₱{computeItem(i)}
+
+                </div>
+
               </div>
+
             ))}
 
-            <h3>Total: ₱{total}</h3>
-            <button onClick={checkout}>Checkout</button>
+            <hr />
+
+            <select
+              value={orderType}
+              onChange={e =>
+                setOrderType(
+                  e.target.value
+                )
+              }
+            >
+
+              <option value="dine-in">
+                Dine-in
+              </option>
+
+              <option value="take-out">
+                Take-out
+              </option>
+
+              <option value="delivery">
+                Delivery
+              </option>
+
+            </select>
+
+            {orderType === "delivery" && (
+
+              <input
+                placeholder="Delivery Fee"
+                value={deliveryFee}
+                onChange={e =>
+                  setDeliveryFee(
+                    e.target.value
+                  )
+                }
+              />
+
+            )}
+
+            <br /><br />
+
+            <input
+              placeholder="Discount"
+              value={discount}
+              onChange={e =>
+                setDiscount(
+                  e.target.value
+                )
+              }
+            />
+
+            <br /><br />
+
+            <input
+              placeholder="Cash"
+              value={cash}
+              onChange={e =>
+                setCash(
+                  e.target.value
+                )
+              }
+            />
+
+            <h3>
+              Total:
+              {" "}
+              ₱{total}
+            </h3>
+
+            {cash && (
+
+              <div>
+                Change:
+                {" "}
+                ₱{change}
+              </div>
+
+            )}
+
+            <button
+              onClick={checkout}
+            >
+              Checkout
+            </button>
+
           </div>
+
         </div>
+
       )}
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen</h2>
+
+        <div style={{
+          flex: 1,
+          padding: 20
+        }}>
+
+          <h2>
+            Kitchen
+          </h2>
 
           {activeOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10 }}>
-              <h3>{o.orderNumber}</h3>
 
-              {o.items.map((i: any, idx: number) => (
-                <div key={idx}>
-                  {i.name} x{i.qty}
-                </div>
-              ))}
+            <div
+              key={o.id}
+              style={{
+                border:
+                  "1px solid #ddd",
+                padding: 12,
+                marginBottom: 12
+              }}
+            >
 
-              <button onClick={() => updateStatus(o.id, "completed")}>
+              <h3>
+                {o.orderNumber}
+              </h3>
+
+              <div>
+                Status:
+                {" "}
+                {o.status}
+              </div>
+
+              <br />
+
+              {o.items.map(
+                (
+                  i: any,
+                  idx: number
+                ) => (
+
+                  <div
+                    key={idx}
+                    style={{
+                      marginBottom: 10,
+                      paddingBottom: 10,
+                      borderBottom:
+                        "1px solid #eee"
+                    }}
+                  >
+
+                    <b>
+                      {i.name}
+                    </b>
+
+                    {" "}x{i.qty}
+
+                    <div>
+                      Size:
+                      {" "}
+                      {i.sizeType}
+                    </div>
+
+                    {i.addons?.includes("Extra Shot") && (
+
+                      <div style={{
+                        color: "#4caf50",
+                        fontWeight: "bold"
+                      }}>
+
+                        ✓ Extra Shot
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                )
+              )}
+
+              <button
+                onClick={() =>
+                  updateStatus(
+                    o.id,
+                    "completed"
+                  )
+                }
+              >
                 Complete
               </button>
+
             </div>
+
           ))}
+
         </div>
+
       )}
 
       {/* ADMIN */}
       {view === "admin" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Completed Orders</h2>
+
+        <div style={{
+          flex: 1,
+          padding: 20
+        }}>
+
+          <h2>
+            Completed Orders
+          </h2>
 
           {completedOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", padding: 10 }}>
-              <h3>{o.orderNumber}</h3>
-              <div>Total: ₱{o.total}</div>
+
+            <div
+              key={o.id}
+              style={{
+                border:
+                  "1px solid #ddd",
+                padding: 12,
+                marginBottom: 12
+              }}
+            >
+
+              <h3>
+                {o.orderNumber}
+              </h3>
+
+              <div>
+                Type:
+                {" "}
+                {o.orderType}
+              </div>
+
+              <div>
+                Status:
+                {" "}
+                {o.status}
+              </div>
+
+              <br />
+
+              {o.items.map(
+                (
+                  i: any,
+                  idx: number
+                ) => (
+
+                  <div
+                    key={idx}
+                    style={{
+                      marginBottom: 10,
+                      paddingBottom: 10,
+                      borderBottom:
+                        "1px solid #eee"
+                    }}
+                  >
+
+                    <b>
+                      {i.name}
+                    </b>
+
+                    {" "}x{i.qty}
+
+                    <div>
+                      Size:
+                      {" "}
+                      {i.sizeType}
+                    </div>
+
+                    {i.addons?.includes("Extra Shot") && (
+
+                      <div style={{
+                        color: "#4caf50",
+                        fontWeight: "bold"
+                      }}>
+
+                        ✓ Extra Shot
+
+                      </div>
+
+                    )}
+
+                    <div>
+                      Item Total:
+                      {" "}
+                      ₱{computeItem(i)}
+                    </div>
+
+                  </div>
+
+                )
+              )}
+
+              <hr />
+
+              <div>
+                Discount:
+                {" "}
+                ₱{o.discount || 0}
+              </div>
+
+              <div>
+                Delivery Fee:
+                {" "}
+                ₱{o.deliveryFee || 0}
+              </div>
+
+              <h3>
+                Total:
+                {" "}
+                ₱{o.total}
+              </h3>
+
             </div>
+
           ))}
+
         </div>
+
       )}
 
     </div>
+
   );
+
 }
