@@ -281,30 +281,32 @@ export default function App() {
   };
 
   /* ================= CART ================= */
-  const makeKey = (item) =>
-    `${item.id}-${item.sizeType}-${item.addons?.join("|") || ""}`;
+  const makeKey = (item: any) => {
+  const addons = item.addons ? [...item.addons].sort().join("|") : "";
+  return `${item.id}-${item.sizeType}-${addons}`;
+};
 
-  const addToCart = (item, sizeLabel, price) => {
-    setCart(prev => {
-      const newItem = {
-        ...item,
-        qty: 1,
-        sizeType: sizeLabel,
-        price,
-        addons: []
-      };
+  const addToCart = (item: any, sizeLabel: string, price: number) => {
+  setCart(prev => {
+    const newItem = {
+      ...item,
+      qty: 1,
+      sizeType: sizeLabel,
+      price: price,
+      addons: []
+    };
 
-      const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
+    const idx = prev.findIndex(p => makeKey(p) === makeKey(newItem));
 
-      if (idx !== -1) {
-        const copy = [...prev];
-        copy[idx].qty += 1;
-        return copy;
-      }
+    if (idx !== -1) {
+      const copy = [...prev];
+      copy[idx].qty += 1;
+      return copy;
+    }
 
-      return [...prev, newItem];
-    });
-  };
+    return [...prev, newItem];
+  });
+};
 
   const updateQty = (idx, delta) => {
     setCart(prev => {
@@ -332,11 +334,14 @@ export default function App() {
   };
 
   /* ================= PRICE ================= */
-  const computeItem = (item) => {
-    const base = item.price * item.qty;
-    const addon = item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
-    return base + addon;
-  };
+  const computeItem = (item: any) => {
+  const base = item.price * item.qty;
+
+  const addon =
+    item.addons?.includes("Extra Shot") ? 10 * item.qty : 0;
+
+  return base + addon;
+};
 
   const total =
     cart.reduce((a, b) => a + computeItem(b), 0) +
@@ -461,33 +466,97 @@ export default function App() {
           </div>
 
           {/* CART */}
-          <div style={{ width: 300 }}>
-            <h3>Cart</h3>
+<div style={{ width: 300, padding: 10, borderLeft: "1px solid #ddd" }}>
+  <h3>Cart</h3>
 
-            {cart.map((i, idx) => (
-              <div key={idx} style={{ border: "1px solid #ddd", padding: 10 }}>
-                <b>{i.name}</b>
-                <div>{i.sizeType}</div>
+  {cart.length === 0 && (
+    <div style={{ color: "#888" }}>Empty cart</div>
+  )}
 
-                <button onClick={() => updateQty(idx, -1)}>-</button>
-                <button onClick={() => updateQty(idx, 1)}>+</button>
+  {cart.map((i, idx) => (
+    <div
+      key={idx}
+      style={{
+        border: "1px solid #ddd",
+        padding: 10,
+        marginBottom: 10,
+        borderRadius: 6
+      }}
+    >
+      {/* PRODUCT NAME */}
+      <b style={{ fontSize: 16 }}>{i.name}</b>
 
-                {i.coffee && (
-                  <button onClick={() => toggleExtraShot(idx)}>
-                    Extra Shot
-                  </button>
-                )}
+      {/* SIZE */}
+      <div style={{ fontSize: 13, color: "#555" }}>
+        Size: {i.sizeType}
+      </div>
 
-                <div>₱{computeItem(i)}</div>
-              </div>
-            ))}
-
-            <h3>Total: ₱{total}</h3>
-            <button onClick={checkout}>Checkout</button>
-          </div>
-
+      {/* ADDONS DISPLAY */}
+      {i.addons?.length > 0 && (
+        <div style={{ fontSize: 13, color: "#4caf50", marginTop: 4 }}>
+          {i.addons.map((a: string, id: number) => (
+            <div key={id}>+ {a}</div>
+          ))}
         </div>
       )}
+
+      {/* QTY CONTROLS */}
+      <div style={{ marginTop: 8 }}>
+        <button onClick={() => updateQty(idx, -1)}>-</button>
+        <span style={{ margin: "0 10px" }}>{i.qty}</span>
+        <button onClick={() => updateQty(idx, 1)}>+</button>
+      </div>
+
+      {/* EXTRA SHOT */}
+      {i.coffee && (
+        <button
+          onClick={() => toggleExtraShot(idx)}
+          style={{
+            marginTop: 8,
+            padding: "4px 8px",
+            border: "1px solid #ddd",
+            background: i.addons?.includes("Extra Shot")
+              ? "#4caf50"
+              : "#fff",
+            color: i.addons?.includes("Extra Shot")
+              ? "#fff"
+              : "#000",
+            cursor: "pointer"
+          }}
+        >
+          {i.addons?.includes("Extra Shot")
+            ? "✓ Extra Shot"
+            : "Add Extra Shot (+₱10)"}
+        </button>
+      )}
+
+      {/* ITEM TOTAL */}
+      <div style={{ marginTop: 10, fontWeight: "bold" }}>
+        ₱{computeItem(i)}
+      </div>
+    </div>
+  ))}
+
+  <hr />
+
+  {/* TOTAL */}
+  <h3>Total: ₱{total}</h3>
+
+  {/* CHECKOUT */}
+  <button
+    onClick={checkout}
+    style={{
+      width: "100%",
+      padding: 10,
+      background: "black",
+      color: "white",
+      border: "none",
+      marginTop: 10
+    }}
+  >
+    Checkout
+  </button>
+</div>
 
       {/* KITCHEN */}
       {view === "kitchen" && (
