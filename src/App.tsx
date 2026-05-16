@@ -534,23 +534,63 @@ export default function App() {
 
       {/* KITCHEN */}
       {view === "kitchen" && (
-        <div style={{ flex: 1, padding: 20 }}>
-          <h2>Kitchen</h2>
+  <div style={{ flex: 1, padding: 20 }}>
+    <h2>Kitchen</h2>
 
-          {activeOrders.map(o => (
-            <div key={o.id} style={{ border: "1px solid #ddd", marginBottom: 10, padding: 10 }}>
+    {activeOrders.map((o) => (
+      <div
+        key={o.id}
+        style={{
+          border: "1px solid #ddd",
+          padding: 12,
+          marginBottom: 12,
+          borderRadius: 6
+        }}
+      >
+        {/* ORDER NUMBER */}
+        <h3 style={{ marginBottom: 8 }}>
+          {o.orderNumber}
+        </h3>
+
+        {/* ITEMS */}
+        <div style={{ marginBottom: 10 }}>
+          {o.items.map((i: any, idx: number) => (
+            <div key={idx} style={{ marginBottom: 4 }}>
               
-              <pre style={{ whiteSpace: "pre-wrap" }}>
-                {formatTicket(o)}
-              </pre>
+              <b>{i.name}</b>
 
-              <button onClick={() => updateStatus(o.id, "completed")}>
-                Complete
-              </button>
+              {" "}({i.sizeType})
+
+              {i.addons?.includes("Extra Shot") && (
+                <span style={{ fontWeight: "bold" }}>
+                  , Extra Shot
+                </span>
+              )}
+
+              {" "}x{i.qty}
             </div>
           ))}
         </div>
-      )}
+
+        {/* ORDER TYPE */}
+        <div>
+          Type: <b>{o.orderType}</b>
+        </div>
+
+        {/* TOTAL */}
+        <div>
+          Total Price: <b>₱{o.total}</b>
+        </div>
+
+        <br />
+
+        <button onClick={() => updateStatus(o.id, "completed")}>
+          Complete
+        </button>
+      </div>
+    ))}
+  </div>
+)}
 
       {/* ADMIN */}
       {view === "admin" && (
