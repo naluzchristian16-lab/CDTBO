@@ -114,8 +114,8 @@ const products = [
     category: "Iced Coffee",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 89 },
-      { label: "20oz", price: 99 }
+      { label: "Malaki", price: 89 },
+      { label: "Mas Malaki", price: 99 }
     ]
   },
   {
@@ -124,8 +124,8 @@ const products = [
     category: "Iced Coffee",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 89 },
-      { label: "20oz", price: 99 }
+      { label: "Malaki", price: 89 },
+      { label: "Mas Malaki", price: 99 }
     ]
   },
   {
@@ -134,8 +134,8 @@ const products = [
     category: "Iced Coffee",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 89 },
-      { label: "20oz", price: 99 }
+      { label: "Malaki", price: 89 },
+      { label: "Mas Malaki", price: 99 }
     ]
   },
   {
@@ -144,8 +144,8 @@ const products = [
     category: "Iced Coffee",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 89 },
-      { label: "20oz", price: 99 }
+      { label: "Malaki", price: 89 },
+      { label: "Mas Malaki", price: 99 }
     ]
   },
   {
@@ -154,8 +154,8 @@ const products = [
     category: "Iced Coffee",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 99 },
-      { label: "20oz", price: 109 }
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
     ]
   },
   {
@@ -164,8 +164,8 @@ const products = [
     category: "Iced Coffee",
     coffee: false,
     sizes: [
-      { label: "16oz", price: 99 },
-      { label: "20oz", price: 109 }
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
     ]
   },
   {
@@ -174,8 +174,8 @@ const products = [
     category: "Iced Coffee",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 99 },
-      { label: "20oz", price: 109 }
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
     ]
   },
 
@@ -186,8 +186,8 @@ const products = [
     category: "Oatside Series",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 99 },
-      { label: "20oz", price: 109 }
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
     ]
   },
   {
@@ -196,8 +196,8 @@ const products = [
     category: "Oatside Series",
     coffee: false,
     sizes: [
-      { label: "16oz", price: 99 },
-      { label: "20oz", price: 109 }
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
     ]
   },
 
@@ -208,8 +208,8 @@ const products = [
     category: "Matcha Collection",
     coffee: false,
     sizes: [
-      { label: "16oz", price: 89 },
-      { label: "20oz", price: 99 }
+      { label: "Malaki", price: 89 },
+      { label: "Mas Malaki", price: 99 }
     ]
   },
   {
@@ -218,8 +218,8 @@ const products = [
     category: "Matcha Collection",
     coffee: true,
     sizes: [
-      { label: "16oz", price: 99 },
-      { label: "20oz", price: 109 }
+      { label: "Malaki", price: 99 },
+      { label: "Mas Malaki", price: 109 }
     ]
   }
 ];
