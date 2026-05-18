@@ -14,21 +14,45 @@ function dateStr(ts: number) {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
-function rangeArr(days: number): string[] {
-  return Array.from({ length: days }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (days - 1 - i));
-    return d.toISOString().slice(0, 10);
-  });
+function rangeArr(from: string, to: string): string[] {
+  const dates: string[] = [];
+  const cur = new Date(from + "T00:00");
+  const end = new Date(to   + "T00:00");
+  while (cur <= end) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
 }
 
-// Compute COGS for a single order item given current recipes + ingredient costs
+function lastNDays(days: number): { from: string; to: string } {
+  const to  = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - (days - 1));
+  return {
+    from: from.toISOString().slice(0, 10),
+    to:   to.toISOString().slice(0, 10),
+  };
+}
+
+/**
+ * Compute COGS for one cart item.
+ *
+ * Recipe lookup priority:
+ *   1. `{productId}__{sizeType}`  — size-specific recipe (e.g. iced_spanish_latte__Malaki)
+ *   2. `{productId}`              — fallback base recipe (covers singleSize products)
+ */
 function itemCogs(
-  item: { id: string; qty: number },
+  item: { id: string; qty: number; sizeType?: string },
   recipes: Recipe[],
   ingredients: Ingredient[]
 ): number {
-  const recipe = recipes.find(r => r.productId === item.id);
+  const sizeKey  = item.sizeType ? `${item.id}__${item.sizeType}` : null;
+  const recipe   =
+    (sizeKey && recipes.find(r => r.productId === sizeKey)) ??
+    recipes.find(r => r.productId === item.id) ??
+    null;
+
   if (!recipe) return 0;
   return recipe.ingredients.reduce((s, ri) => {
     const ing = ingredients.find(i => i.id === ri.ingredientId);
@@ -77,27 +101,30 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
   );
 
   // ── Drink stats builder ───────────────────────────────────────────────────────
-  // Builds a sorted DrinkStat[] from a subset of orders
 
   const buildDrinkStats = useMemo(() => (subset: Order[]): DrinkStat[] => {
     const map = new Map<string, DrinkStat>();
 
     for (const order of subset) {
       for (const item of order.items) {
-        const existing = map.get(item.id);
-        const cogs = itemCogs(item, recipes, ingredients);
+        // Key by id + size so Malaki/Mas Malaki are separate rows
+        const key = item.sizeType ? `${item.id}__${item.sizeType}` : item.id;
+        const existing = map.get(key);
+        const cogs    = itemCogs(item, recipes, ingredients);
         const revenue = item.price * item.qty;
-        const margin = revenue > 0 ? ((revenue - cogs) / revenue) * 100 : 0;
+        const margin  = revenue > 0 ? ((revenue - cogs) / revenue) * 100 : 0;
+        const label   = item.sizeType ? `${item.name} (${item.sizeType})` : item.name;
 
         if (existing) {
+          const prevQty = existing.qtySold;
           existing.qtySold  += item.qty;
           existing.revenue  += revenue;
-          // Running avg margin weighted by qty
-          existing.avgMargin = (existing.avgMargin * (existing.qtySold - item.qty) + margin * item.qty) / existing.qtySold;
+          existing.avgMargin =
+            (existing.avgMargin * prevQty + margin * item.qty) / existing.qtySold;
         } else {
-          map.set(item.id, {
-            productId: item.id,
-            name:      item.name,
+          map.set(key, {
+            productId: key,
+            name:      label,
             qtySold:   item.qty,
             revenue,
             avgMargin: margin,
@@ -109,21 +136,17 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
     return Array.from(map.values()).sort((a, b) => b.qtySold - a.qtySold);
   }, [recipes, ingredients]);
 
-  // ── Top 5 daily ──────────────────────────────────────────────────────────────
+  // ── Top 5 ─────────────────────────────────────────────────────────────────────
 
   const top5Today = useMemo(() => {
     const todayOrders = completedOrders.filter(o => dateStr(o.createdAt) === today);
     return buildDrinkStats(todayOrders).slice(0, 5);
   }, [completedOrders, today, buildDrinkStats]);
 
-  // ── Top 5 all-time ───────────────────────────────────────────────────────────
-
   const top5AllTime = useMemo(() =>
     buildDrinkStats(completedOrders).slice(0, 5),
     [completedOrders, buildDrinkStats]
   );
-
-  // ── Profit margin per product (all-time, top 10 by margin) ───────────────────
 
   const marginRanking = useMemo(() =>
     buildDrinkStats(completedOrders)
@@ -133,10 +156,10 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
     [completedOrders, buildDrinkStats]
   );
 
-  // ── Daily stats for a range ───────────────────────────────────────────────────
+  // ── Daily stats for an explicit date range ───────────────────────────────────
 
-  const buildDailyStats = useMemo(() => (days: number): DailyStat[] => {
-    return rangeArr(days).map(date => {
+  const buildStatsForRange = useMemo(() => (from: string, to: string): DailyStat[] => {
+    return rangeArr(from, to).map(date => {
       const dayOrders = completedOrders.filter(o => dateStr(o.createdAt) === date);
       const revenue   = dayOrders.reduce((s, o) => s + o.total, 0);
       const cogs      = dayOrders.reduce((s, o) =>
@@ -159,10 +182,18 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
     });
   }, [completedOrders, recipes, ingredients, expenses]);
 
-  const last7Days  = useMemo(() => buildDailyStats(7),  [buildDailyStats]);
-  const last30Days = useMemo(() => buildDailyStats(30), [buildDailyStats]);
+  // Keep last7Days / last30Days as convenience wrappers
+  const last7Days  = useMemo(() => {
+    const { from, to } = lastNDays(7);
+    return buildStatsForRange(from, to);
+  }, [buildStatsForRange]);
 
-  // ── Payment method breakdown ──────────────────────────────────────────────────
+  const last30Days = useMemo(() => {
+    const { from, to } = lastNDays(30);
+    return buildStatsForRange(from, to);
+  }, [buildStatsForRange]);
+
+  // ── Payment breakdown ────────────────────────────────────────────────────────
 
   const paymentBreakdown = useMemo(() => (dateFrom: string, dateTo: string) => {
     const subset = completedOrders.filter(o => {
@@ -177,24 +208,17 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
   }, [completedOrders]);
 
   return {
-    // Cups
     cupsToday,
     cupsThisWeek,
     cupsAllTime,
     cupsForDate,
-
-    // Top drinks
     top5Today,
     top5AllTime,
     marginRanking,
-
-    // Trend data
     last7Days,
     last30Days,
-    buildDailyStats,
+    buildStatsForRange,
     buildDrinkStats,
-
-    // Payment
     paymentBreakdown,
   };
 }
