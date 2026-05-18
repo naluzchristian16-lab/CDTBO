@@ -3,16 +3,15 @@ import {
   collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { Order, CartItem, OrderType } from "../types";
+import { Order, CartItem, OrderType, PaymentMethod } from "../types";
 
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Real-time listener — newest orders first in the array
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(q, snap => {
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
       setLoading(false);
     });
@@ -24,6 +23,7 @@ export function useOrders() {
     deviceId: string;
     items: CartItem[];
     orderType: OrderType;
+    paymentMethod: PaymentMethod;   // NEW
     deliveryFee: number;
     discount: number;
     cash: number;
@@ -36,15 +36,14 @@ export function useOrders() {
     });
   };
 
-  const markComplete = async (orderId: string) => {
-    await updateDoc(doc(db, "orders", orderId), { status: "completed" });
-  };
+  const markComplete = async (orderId: string) =>
+    updateDoc(doc(db, "orders", orderId), { status: "completed" });
 
-  // ── Derived helpers ──────────────────────────────────────────────────────────
+  // ── Derived ──────────────────────────────────────────────────────────────────
 
   const activeOrders = orders
-    .filter(o => o.status !== "completed")
-    .sort((a, b) => a.createdAt - b.createdAt); // oldest first in kitchen
+    .filter(o => o.status === "pending")
+    .sort((a, b) => a.createdAt - b.createdAt);
 
   const completedOrders = orders.filter(o => o.status === "completed");
 
@@ -54,7 +53,7 @@ export function useOrders() {
     o => new Date(o.createdAt).toDateString() === todayStr
   );
 
-  const todayRevenue = todayCompleted.reduce((sum, o) => sum + o.total, 0);
+  const todayRevenue = todayCompleted.reduce((s, o) => s + o.total, 0);
 
   return {
     orders,
