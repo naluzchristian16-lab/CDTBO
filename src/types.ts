@@ -11,8 +11,8 @@ export interface Product {
   category: string;
   coffee: boolean;
   singleSize?: boolean;
-  size?: ProductSize;       // used when singleSize = true
-  sizes?: ProductSize[];    // used when singleSize = false
+  size?: ProductSize;
+  sizes?: ProductSize[];
 }
 
 export interface CartItem extends Product {
@@ -24,8 +24,9 @@ export interface CartItem extends Product {
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
-export type OrderStatus = "pending" | "completed";
-export type OrderType   = "dine-in" | "pickup" | "delivery";
+export type OrderStatus    = "pending" | "completed" | "voided";
+export type OrderType      = "dine-in" | "pickup" | "delivery";
+export type PaymentMethod  = "cash" | "gcash" | "card";
 
 export interface Order {
   id: string;
@@ -33,12 +34,13 @@ export interface Order {
   deviceId: string;
   items: CartItem[];
   orderType: OrderType;
+  paymentMethod: PaymentMethod;   // NEW
   deliveryFee: number;
   discount: number;
   cash: number;
   total: number;
   status: OrderStatus;
-  createdAt: number;        // Unix ms timestamp
+  createdAt: number;
 }
 
 // ─── Inventory ────────────────────────────────────────────────────────────────
@@ -46,32 +48,86 @@ export interface Order {
 export interface Ingredient {
   id: string;
   name: string;
-  unit: string;             // e.g. "ml", "g", "pcs"
-  stock: number;            // current stock in that unit
-  costPerUnit: number;      // ₱ per unit — used to compute COGS
-  lowStockThreshold: number;// alert when stock drops below this
+  unit: string;
+  stock: number;
+  costPerUnit: number;
+  lowStockThreshold: number;
 }
-
-// ─── Recipes ──────────────────────────────────────────────────────────────────
 
 export interface RecipeIngredient {
   ingredientId: string;
-  qty: number;              // how many units consumed per 1 drink
+  qty: number;
 }
 
 export interface Recipe {
-  id: string;               // same as Product.id
+  id: string;
   productId: string;
   ingredients: RecipeIngredient[];
+}
+
+// ─── Suppliers ────────────────────────────────────────────────────────────────
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contact: string;
+  notes: string;
+}
+
+// ─── Restock Log ──────────────────────────────────────────────────────────────
+
+export interface RestockEntry {
+  id: string;
+  ingredientId: string;
+  supplierId: string;
+  qtyAdded: number;
+  costPerUnit: number;
+  totalCost: number;
+  date: string;         // "YYYY-MM-DD"
+  notes: string;
+  createdAt: number;
 }
 
 // ─── Expenses ─────────────────────────────────────────────────────────────────
 
 export interface Expense {
   id: string;
-  date: string;             // "YYYY-MM-DD"
-  category: string;         // "Fuel" | "Food Allowance" | "Supplies" | "Other"
+  date: string;
+  category: string;
   description: string;
   amount: number;
   createdAt: number;
+}
+
+// ─── Cash Reconciliation ──────────────────────────────────────────────────────
+
+export interface CashReconciliation {
+  id: string;
+  date: string;
+  expectedCash: number;
+  actualCash: number;
+  difference: number;
+  notes: string;
+  submittedBy: string;
+  createdAt: number;
+}
+
+// ─── Analytics helpers (computed client-side, not stored) ─────────────────────
+
+export interface DrinkStat {
+  productId: string;
+  name: string;
+  qtySold: number;
+  revenue: number;
+  avgMargin: number;    // % gross margin if recipe exists
+}
+
+export interface DailyStat {
+  date: string;         // "YYYY-MM-DD"
+  revenue: number;
+  cogs: number;
+  expenses: number;
+  netProfit: number;
+  orderCount: number;
+  cupsCount: number;
 }
