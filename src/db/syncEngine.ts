@@ -31,12 +31,11 @@ import {
 } from "./localDb";
 import { Dexie } from "dexie";
 
-// ── Collection map ─────────────────────────────────────────────────────────────
-// Maps Firestore collection name → Dexie table reference
-
+// FIX: Added "products" and "categories" to the collection map
 type CollectionName =
   | "orders" | "ingredients" | "recipes" | "expenses"
-  | "restockLog" | "suppliers" | "cashReconciliations";
+  | "restockLog" | "suppliers" | "cashReconciliations"
+  | "products" | "categories";
 
 function getTable(col: CollectionName) {
   const map = {
@@ -47,19 +46,18 @@ function getTable(col: CollectionName) {
     restockLog:          localDb.restockLog,
     suppliers:           localDb.suppliers,
     cashReconciliations: localDb.cashReconciliations,
+    products:            localDb.products,
+    categories:          localDb.categories,
   } as const;
   return map[col];
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
-
 let _unsubscribers: Unsubscribe[] = [];
-
-// ── 1. Pull all Firestore data into IndexedDB ─────────────────────────────────
 
 const COLLECTIONS: CollectionName[] = [
   "orders", "ingredients", "recipes", "expenses",
   "restockLog", "suppliers", "cashReconciliations",
+  "products", "categories",
 ];
 
 export async function pullFromFirebase(): Promise<void> {
@@ -78,11 +76,8 @@ export async function pullFromFirebase(): Promise<void> {
   await setLastSyncedAt(new Date().toISOString());
 }
 
-// ── 2. Start real-time listeners (online only) ────────────────────────────────
-// Each onSnapshot keeps its Dexie table patched as Firebase changes arrive.
-
 export function startRealtimeListeners(): void {
-  stopRealtimeListeners(); // clear old listeners first
+  stopRealtimeListeners();
 
   _unsubscribers = COLLECTIONS.map(col => {
     const table = getTable(col);
@@ -104,8 +99,6 @@ export function stopRealtimeListeners(): void {
   _unsubscribers = [];
 }
 
-// ── 3. Write helper ───────────────────────────────────────────────────────────
-
 interface WriteArgs {
   col:     CollectionName;
   docId:   string;
@@ -114,16 +107,9 @@ interface WriteArgs {
   isOnline: boolean;
 }
 
-/**
- * The single write entrypoint used by all hooks.
- *
- * Usage:
- *   await syncWrite({ col:"orders", docId: id, op:"set", payload: order, isOnline })
- */
 export async function syncWrite({ col, docId, op, payload, isOnline }: WriteArgs) {
   const table = getTable(col);
 
-  // ── Always write to IndexedDB first ──────────────────────────────────────
   if (op === "set" || op === "update") {
     await (table as Dexie.Table).put({ id: docId, ...payload });
   } else if (op === "delete") {
@@ -131,28 +117,23 @@ export async function syncWrite({ col, docId, op, payload, isOnline }: WriteArgs
   }
 
   if (isOnline) {
-    // ── Online: write directly to Firebase ─────────────────────────────────
     try {
       const ref = doc(firestore, col, docId);
       if (op === "set")    await setDoc(ref, payload!);
       if (op === "update") await updateDoc(ref, payload as Record<string, unknown>);
       if (op === "delete") await deleteDoc(ref);
     } catch (err) {
-      // Firebase write failed despite being "online" — queue it as fallback
       console.warn(`[syncEngine] Firebase write failed, queuing:`, err);
       await enqueuePendingWrite({
         collection: col, docId, op, payload, createdAt: Date.now(),
       });
     }
   } else {
-    // ── Offline: enqueue for later ──────────────────────────────────────────
     await enqueuePendingWrite({
       collection: col, docId, op, payload, createdAt: Date.now(),
     });
   }
 }
-
-// ── 4. Flush pending writes to Firebase ──────────────────────────────────────
 
 export async function flushPendingWrites(): Promise<{ flushed: number; failed: number }> {
   const queue = await getAllPendingWrites();
@@ -170,7 +151,6 @@ export async function flushPendingWrites(): Promise<{ flushed: number; failed: n
     } catch (err) {
       console.error(`[syncEngine] Failed to flush write ${write.id}:`, err);
       failed++;
-      // Stop flushing — keep queue order intact, retry next time
       break;
     }
   }
@@ -181,3 +161,4 @@ export async function flushPendingWrites(): Promise<{ flushed: number; failed: n
 
   return { flushed, failed };
 }
+
