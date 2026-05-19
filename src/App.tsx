@@ -8,12 +8,12 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { useOrders }      from "./hooks/useOrders";
 import { useIngredients } from "./hooks/useIngredients";
 import { useIsMobile }    from "./hooks/useIsMobile";
-import { useSyncStatus }  from "./hooks/useSyncStatus";   // ← NEW
+import { useSyncStatus }  from "./hooks/useSyncStatus";
 
 import { categories, products } from "./data/products";
 import { CartItem, OrderType, PaymentMethod } from "./types";
 import AdminShell  from "./components/Admin/AdminShell";
-import SyncBanner  from "./components/SyncBanner";         // ← NEW
+import SyncBanner  from "./components/SyncBanner";
 
 const fonts = document.createElement("link");
 fonts.rel = "stylesheet";
@@ -255,7 +255,7 @@ function AppContent() {
   const ordersCtx      = useOrders();
   const ingredientsCtx = useIngredients();
 
-  // ── NEW: sync engine — mount once at root ─────────────────────────────────
+  // ── Sync engine — mount once at root ─────────────────────────────────────
   const sync = useSyncStatus();
 
   /* ── Auth ── */
@@ -413,13 +413,16 @@ function AppContent() {
                 </div>
                 <span style={S.ciPrice}>₱{computeItem(item)}</span>
               </div>
-              {item.id === "cappuccino" || item.id === "latte" || item.id === "americano" ? (
+              {/* ✅ FIX: Use item.coffee flag instead of hardcoded IDs */}
+              {item.coffee && (
                 <button onClick={() => toggleExtraShot(idx)} style={{
-                  marginTop:6, width:"100%", padding:"4px", background: item.addons?.includes("Extra Shot") ? "#C0622A" : "transparent",
-                  border:"1px solid #C0622A", borderRadius:4, fontSize:10, color: item.addons?.includes("Extra Shot") ? "#fff" : "#C0622A",
+                  marginTop:6, width:"100%", padding:"4px",
+                  background: item.addons?.includes("Extra Shot") ? "#C0622A" : "transparent",
+                  border:"1px solid #C0622A", borderRadius:4, fontSize:10,
+                  color: item.addons?.includes("Extra Shot") ? "#fff" : "#C0622A",
                   fontWeight:600, cursor:"pointer",
                 }}>⭐ Extra Shot +₱10</button>
-              ) : null}
+              )}
             </div>
           ))
         )}
@@ -467,90 +470,95 @@ function AppContent() {
 
   return (
     <div style={S.root}>
-      {/* Sidebar */}
-      <div style={S.sidebar}>
-        <div style={S.sidebarLogo}>
-          <div style={S.brand}>CD'T</div>
-          <div style={S.tagline}>POS</div>
-        </div>
+      {/* Sidebar — hidden on mobile */}
+      {!isMobile && (
+        <div style={S.sidebar}>
+          <div style={S.sidebarLogo}>
+            <div style={S.brand}>CD'T</div>
+            <div style={S.tagline}>POS</div>
+          </div>
 
-        <div style={S.navSection}>
-          <NavBtn active={view === "cashier"} onClick={() => setView("cashier")} icon="🧾">Cashier</NavBtn>
-          <NavBtn active={view === "kitchen"} onClick={() => setView("kitchen")} icon="🍵">Kitchen</NavBtn>
-          <NavBtn active={view === "admin"} onClick={() => setView("admin")} icon="📊">Admin</NavBtn>
-        </div>
+          <div style={S.navSection}>
+            <NavBtn active={view === "cashier"} onClick={() => setView("cashier")} icon="🧾">Cashier</NavBtn>
+            <NavBtn active={view === "kitchen"} onClick={() => setView("kitchen")} icon="🍵">Kitchen</NavBtn>
+            <NavBtn active={view === "admin"} onClick={() => setView("admin")} icon="📊">Admin</NavBtn>
+          </div>
 
-        <div style={S.catSection}>
-          <span style={S.catLabel}>Categories</span>
-          {categories.map(c => (
-            <CatBtn key={c} active={category === c} onClick={() => setCategory(c)}>{c}</CatBtn>
-          ))}
-        </div>
+          <div style={S.catSection}>
+            <span style={S.catLabel}>Categories</span>
+            {categories.map(c => (
+              <CatBtn key={c} active={category === c} onClick={() => setCategory(c)}>{c}</CatBtn>
+            ))}
+          </div>
 
-        <div style={S.sidebarFooter}>
-          <div style={S.deviceBadge}>📍 {deviceId}</div>
-          <button onClick={logout} style={{ marginTop:8, width:"100%", padding:"6px", background:"transparent", border:"1px solid #C0622A", borderRadius:6, color:"#C0622A", fontFamily:"'Barlow', sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>LOGOUT</button>
+          <div style={S.sidebarFooter}>
+            <div style={S.deviceBadge}>📍 {deviceId}</div>
+            <button onClick={logout} style={{ marginTop:8, width:"100%", padding:"6px", background:"transparent", border:"1px solid #C0622A", borderRadius:6, color:"#C0622A", fontFamily:"'Barlow', sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>LOGOUT</button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main content */}
       <div style={S.productArea}>
-        {/* Sync banner */}
+        {/* Sync banner — ✅ FIX: pass sync prop */}
         <SyncBanner sync={sync} />
 
-        {/* Cashier view */}
+        {/* Cashier view — ✅ FIX: flexDirection row so cart stays on the side */}
         {view === "cashier" && (
-          <div style={S.productArea}>
-            {isMobile && (
-              <div style={{ padding:"10px", background:"#FAF6EF", borderBottom:"1px solid #E8DDD0", display:"flex", gap:6, overflowX:"auto" }}>
-                {categories.map(c => (
-                  <button key={c} onClick={() => setCategory(c)} style={{
-                    padding:"5px 12px", borderRadius:16, whiteSpace:"nowrap",
-                    background: category === c ? "#C0622A" : "transparent",
-                    border: category === c ? "none" : "1px solid #5a3020",
-                    color: category === c ? "#fff" : "#C8A98A",
-                    fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Barlow', sans-serif",
-                  }}>{c}</button>
-                ))}
-              </div>
-            )}
-
-            <div style={S.topbar}>
-              <div style={S.searchWrap}>
-                <span style={{ fontSize:15, color:"#A0856A" }}>🔍</span>
-                <input style={S.searchInput} placeholder="Search drinks…" value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
-              <div style={S.otWrap}>
-                {(["dine-in","pickup","delivery"] as OrderType[]).map(t => (
-                  <OtBtn key={t} active={orderType === t} onClick={() => setOrderType(t)}>
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </OtBtn>
-                ))}
-              </div>
-            </div>
-
-            <div style={{
-              flex:1, overflowY:"auto", padding:10,
-              display:"grid", gap:8, alignContent:"start",
-              gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(148px, 1fr))",
-            }}>
-              {filtered.map(p => (
-                <div key={p.id} style={{ background:"#fff", border:"1px solid #E8DDD0", borderRadius:10, padding:10 }}>
-                  <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:700, fontSize:13, color:"#3B1F0E", lineHeight:1.2, marginBottom:8 }}>{p.name}</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    {p.singleSize ? (
-                      <SizeBtn label={p.size!.label} price={p.size!.price} onClick={() => { addToCart(p, p.size!.label, p.size!.price); if (isMobile) setCartOpen(true); }} />
-                    ) : (
-                      p.sizes!.map(s => (
-                        <SizeBtn key={s.label} label={s.label} price={s.price} onClick={() => { addToCart(p, s.label, s.price); if (isMobile) setCartOpen(true); }} />
-                      ))
-                    )}
-                  </div>
+          <div style={{ ...S.productArea, flexDirection:"row" }}>
+            {/* Left: product grid */}
+            <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+              {isMobile && (
+                <div style={{ padding:"10px", background:"#FAF6EF", borderBottom:"1px solid #E8DDD0", display:"flex", gap:6, overflowX:"auto" }}>
+                  {categories.map(c => (
+                    <button key={c} onClick={() => setCategory(c)} style={{
+                      padding:"5px 12px", borderRadius:16, whiteSpace:"nowrap",
+                      background: category === c ? "#C0622A" : "transparent",
+                      border: category === c ? "none" : "1px solid #5a3020",
+                      color: category === c ? "#fff" : "#C8A98A",
+                      fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Barlow', sans-serif",
+                    }}>{c}</button>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              <div style={S.topbar}>
+                <div style={S.searchWrap}>
+                  <span style={{ fontSize:15, color:"#A0856A" }}>🔍</span>
+                  <input style={S.searchInput} placeholder="Search drinks…" value={search} onChange={e => setSearch(e.target.value)} />
+                </div>
+                <div style={S.otWrap}>
+                  {(["dine-in","pickup","delivery"] as OrderType[]).map(t => (
+                    <OtBtn key={t} active={orderType === t} onClick={() => setOrderType(t)}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </OtBtn>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{
+                flex:1, overflowY:"auto", padding:10,
+                display:"grid", gap:8, alignContent:"start",
+                gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(148px, 1fr))",
+              }}>
+                {filtered.map(p => (
+                  <div key={p.id} style={{ background:"#fff", border:"1px solid #E8DDD0", borderRadius:10, padding:10 }}>
+                    <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:700, fontSize:13, color:"#3B1F0E", lineHeight:1.2, marginBottom:8 }}>{p.name}</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                      {p.singleSize ? (
+                        <SizeBtn label={p.size!.label} price={p.size!.price} onClick={() => { addToCart(p, p.size!.label, p.size!.price); if (isMobile) setCartOpen(true); }} />
+                      ) : (
+                        p.sizes!.map(s => (
+                          <SizeBtn key={s.label} label={s.label} price={s.price} onClick={() => { addToCart(p, s.label, s.price); if (isMobile) setCartOpen(true); }} />
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Desktop cart */}
+            {/* Right: desktop cart panel */}
             {!isMobile && (
               <div style={S.cartPanel}>
                 <div style={S.cartHeader}>
@@ -610,7 +618,7 @@ function AppContent() {
         {/* Admin view */}
         {view === "admin" && <AdminShell />}
 
-      </div>{/* end main content row */}
+      </div>{/* end main content */}
 
       {/* Mobile bottom nav */}
       {isMobile && <BottomTabBar view={view} setView={setView} activeCount={ordersCtx.activeOrders.length} />}
@@ -640,7 +648,7 @@ function AppContent() {
   );
 }
 
-// ✅ FIX: Wrap entire app in ErrorBoundary to catch errors gracefully
+// ✅ Wrap entire app in ErrorBoundary to catch errors gracefully
 export default function App() {
   return (
     <ErrorBoundary>
