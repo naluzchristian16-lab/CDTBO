@@ -48,7 +48,7 @@ class BrewPosDb extends Dexie {
       orders:              "id, status, createdAt, deviceId",
       ingredients:         "id, name",
       recipes:             "id, productId",
-      expenses:            "id, date, category",
+      expenses:            "id, date, category, createdAt",   // ← added createdAt
       restockLog:          "id, ingredientId, date, createdAt",
       suppliers:           "id, name",
       cashReconciliations: "id, date",
@@ -57,6 +57,20 @@ class BrewPosDb extends Dexie {
       pendingWrites:       "++id, collection, docId, createdAt",
 
       // Generic key-value store for metadata
+      meta:                "key",
+    });
+
+    // ── Version 2: adds createdAt index to expenses ───────────────────────────
+    // Required for useExpenses → localDb.expenses.orderBy("createdAt")
+    this.version(2).stores({
+      orders:              "id, status, createdAt, deviceId",
+      ingredients:         "id, name",
+      recipes:             "id, productId",
+      expenses:            "id, date, category, createdAt",   // ← createdAt indexed
+      restockLog:          "id, ingredientId, date, createdAt",
+      suppliers:           "id, name",
+      cashReconciliations: "id, date",
+      pendingWrites:       "++id, collection, docId, createdAt",
       meta:                "key",
     });
   }
