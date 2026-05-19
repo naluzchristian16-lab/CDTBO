@@ -6,32 +6,33 @@
  *   - Always writes to IndexedDB first (instant, offline-safe)
  *   - If online: also writes to Firebase immediately
  *   - If offline: queues write for later flush
- *
- * The real-time Firebase listeners (started by useSyncStatus) keep
- * IndexedDB patched whenever the app is online, so data from other
- * devices still lands here.
  */
 
-import { useLiveQuery }    from "dexie-react-hooks";    // npm install dexie-react-hooks
+import { useLiveQuery }    from "dexie-react-hooks";
 import { localDb }         from "../db/localDb";
 import { syncWrite }       from "../db/syncEngine";
 import { useOnlineStatus } from "./useOnlineStatus";
 import { Ingredient, Recipe, CartItem } from "../types";
-import { v4 as uuidv4 }    from "uuid";                // npm install uuid @types/uuid
+import { v4 as uuidv4 }    from "uuid";
 
 export function useIngredients() {
   const isOnline = useOnlineStatus();
 
   // ── Live queries from IndexedDB — reactive, works offline ────────────────
-  const ingredients: Ingredient[] = useLiveQuery(
-    () => localDb.ingredients.toArray(), [], []
-  ) ?? [];
+  // undefined = Dexie still resolving; [] = resolved but empty
+  const rawIngredients = useLiveQuery(
+    () => localDb.ingredients.toArray(), []
+  );
 
-  const recipes: Recipe[] = useLiveQuery(
-    () => localDb.recipes.toArray(), [], []
-  ) ?? [];
+  const rawRecipes = useLiveQuery(
+    () => localDb.recipes.toArray(), []
+  );
 
-  const loading = ingredients.length === 0 && recipes.length === 0;
+  const ingredients: Ingredient[] = rawIngredients ?? [];
+  const recipes: Recipe[]         = rawRecipes ?? [];
+
+  // loading only while Dexie hasn't resolved yet — not when db is simply empty
+  const loading = rawIngredients === undefined || rawRecipes === undefined;
 
   // ── Ingredient CRUD ───────────────────────────────────────────────────────
 
@@ -60,7 +61,6 @@ export function useIngredients() {
   // ── Recipe CRUD ───────────────────────────────────────────────────────────
 
   const saveRecipe = async (recipe: Omit<Recipe, "id">) => {
-    // Check if a recipe for this productId already exists locally
     const existing = await localDb.recipes
       .where("productId").equals(recipe.productId).first();
 
