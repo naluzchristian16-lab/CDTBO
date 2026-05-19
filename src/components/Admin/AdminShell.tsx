@@ -13,9 +13,11 @@ import Recipes        from "./Recipes";
 import Expenses       from "./Expenses";
 import RestockLog     from "./RestockLog";
 import Reconciliation from "./Reconciliation";
+import ProductManager from "./ProductManager";
 
 const TABS = [
   { id:"dashboard",      label:"📊 Dashboard"      },
+  { id:"products",       label:"🛍 Products"        },
   { id:"inventory",      label:"📦 Inventory"      },
   { id:"recipes",        label:"📋 Recipes"        },
   { id:"expenses",       label:"💸 Expenses"       },
@@ -42,7 +44,6 @@ export default function AdminShell() {
     expenses:    expensesCtx.expenses,
   });
 
-  // ✅ FIX: Check if any context is still loading
   const isLoading = ordersCtx.loading || ingredientsCtx.loading || expensesCtx.loading;
 
   return (
@@ -70,25 +71,15 @@ export default function AdminShell() {
 
       {/* Tab content */}
       <div style={{ flex:1, overflowY:"auto" }}>
-        {/* ✅ FIX: Show loading state instead of blank page */}
         {isLoading ? (
           <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-            color: "#8A6040",
-            gap: 12,
-            background: "#FAF6EF",
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", height: "100%", color: "#8A6040",
+            gap: 12, background: "#FAF6EF",
           }}>
             <div style={{ fontSize: 48 }}>⏳</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#3B1F0E" }}>
-              Loading admin data...
-            </div>
-            <div style={{ fontSize: 12, color: "#C8A98A" }}>
-              Syncing with Firebase
-            </div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#3B1F0E" }}>Loading admin data...</div>
+            <div style={{ fontSize: 12, color: "#C8A98A" }}>Syncing with Firebase</div>
           </div>
         ) : (
           <>
@@ -101,6 +92,7 @@ export default function AdminShell() {
                 restock={restockCtx}
               />
             )}
+            {tab === "products"       && <ProductManager />}
             {tab === "inventory"      && <Inventory   ingredients={ingredientsCtx} />}
             {tab === "recipes"        && <Recipes     ingredients={ingredientsCtx} />}
             {tab === "expenses"       && <Expenses    expenses={expensesCtx} />}
