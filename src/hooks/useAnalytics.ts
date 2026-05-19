@@ -10,8 +10,16 @@ interface Props {
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 
+// FIX #2: Use local time instead of UTC so orders placed in PH timezone
+// (UTC+8) are counted on the correct calendar date in the dashboard.
+// The old toISOString() returned a UTC date, which was always 8 hours behind
+// local time — causing all dashboard metrics to show 0 for "today".
 function dateStr(ts: number) {
-  return new Date(ts).toISOString().slice(0, 10);
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function rangeArr(from: string, to: string): string[] {
