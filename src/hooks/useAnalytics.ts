@@ -35,13 +35,6 @@ function lastNDays(days: number): { from: string; to: string } {
   };
 }
 
-/**
- * Compute COGS for one cart item.
- *
- * Recipe lookup priority:
- *   1. `{productId}__{sizeType}`  — size-specific recipe (e.g. iced_spanish_latte__Malaki)
- *   2. `{productId}`              — fallback base recipe (covers singleSize products)
- */
 function itemCogs(
   item: { id: string; qty: number; sizeType?: string },
   recipes: Recipe[],
@@ -64,6 +57,14 @@ function itemCogs(
 
 export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) {
 
+  // FIX: Count pending + completed orders for dashboard revenue.
+  // Orders are created as "pending" and only move to "completed" when Kitchen
+  // marks them done. Voided orders are excluded from all metrics.
+  const billedOrders = useMemo(
+    () => orders.filter(o => o.status === "pending" || o.status === "completed"),
+    [orders]
+  );
+
   const completedOrders = useMemo(
     () => orders.filter(o => o.status === "completed"),
     [orders]
@@ -80,24 +81,24 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
   })();
 
   const cupsForDate = useMemo(() => (date: string) =>
-    completedOrders
+    billedOrders
       .filter(o => dateStr(o.createdAt) === date)
       .reduce((s, o) => s + o.items.reduce((a, i) => a + i.qty, 0), 0),
-    [completedOrders]
+    [billedOrders]
   );
 
   const cupsToday = useMemo(() => cupsForDate(today), [cupsForDate, today]);
 
   const cupsThisWeek = useMemo(() =>
-    completedOrders
+    billedOrders
       .filter(o => dateStr(o.createdAt) >= weekStart)
       .reduce((s, o) => s + o.items.reduce((a, i) => a + i.qty, 0), 0),
-    [completedOrders, weekStart]
+    [billedOrders, weekStart]
   );
 
   const cupsAllTime = useMemo(() =>
-    completedOrders.reduce((s, o) => s + o.items.reduce((a, i) => a + i.qty, 0), 0),
-    [completedOrders]
+    billedOrders.reduce((s, o) => s + o.items.reduce((a, i) => a + i.qty, 0), 0),
+    [billedOrders]
   );
 
   // ── Drink stats builder ───────────────────────────────────────────────────────
@@ -107,7 +108,6 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
 
     for (const order of subset) {
       for (const item of order.items) {
-        // Key by id + size so Malaki/Mas Malaki are separate rows
         const key = item.sizeType ? `${item.id}__${item.sizeType}` : item.id;
         const existing = map.get(key);
         const cogs    = itemCogs(item, recipes, ingredients);
@@ -139,28 +139,28 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
   // ── Top 5 ─────────────────────────────────────────────────────────────────────
 
   const top5Today = useMemo(() => {
-    const todayOrders = completedOrders.filter(o => dateStr(o.createdAt) === today);
+    const todayOrders = billedOrders.filter(o => dateStr(o.createdAt) === today);
     return buildDrinkStats(todayOrders).slice(0, 5);
-  }, [completedOrders, today, buildDrinkStats]);
+  }, [billedOrders, today, buildDrinkStats]);
 
   const top5AllTime = useMemo(() =>
-    buildDrinkStats(completedOrders).slice(0, 5),
-    [completedOrders, buildDrinkStats]
+    buildDrinkStats(billedOrders).slice(0, 5),
+    [billedOrders, buildDrinkStats]
   );
 
   const marginRanking = useMemo(() =>
-    buildDrinkStats(completedOrders)
+    buildDrinkStats(billedOrders)
       .filter(d => d.avgMargin > 0)
       .sort((a, b) => b.avgMargin - a.avgMargin)
       .slice(0, 10),
-    [completedOrders, buildDrinkStats]
+    [billedOrders, buildDrinkStats]
   );
 
   // ── Daily stats for an explicit date range ───────────────────────────────────
 
   const buildStatsForRange = useMemo(() => (from: string, to: string): DailyStat[] => {
     return rangeArr(from, to).map(date => {
-      const dayOrders = completedOrders.filter(o => dateStr(o.createdAt) === date);
+      const dayOrders = billedOrders.filter(o => dateStr(o.createdAt) === date);
       const revenue   = dayOrders.reduce((s, o) => s + o.total, 0);
       const cogs      = dayOrders.reduce((s, o) =>
         s + o.items.reduce((a, item) => a + itemCogs(item, recipes, ingredients), 0), 0);
@@ -180,9 +180,8 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
         cupsCount,
       };
     });
-  }, [completedOrders, recipes, ingredients, expenses]);
+  }, [billedOrders, recipes, ingredients, expenses]);
 
-  // Keep last7Days / last30Days as convenience wrappers
   const last7Days  = useMemo(() => {
     const { from, to } = lastNDays(7);
     return buildStatsForRange(from, to);
@@ -196,7 +195,7 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
   // ── Payment breakdown ────────────────────────────────────────────────────────
 
   const paymentBreakdown = useMemo(() => (dateFrom: string, dateTo: string) => {
-    const subset = completedOrders.filter(o => {
+    const subset = billedOrders.filter(o => {
       const d = dateStr(o.createdAt);
       return d >= dateFrom && d <= dateTo;
     });
@@ -205,7 +204,7 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
       gcash: subset.filter(o => o.paymentMethod === "gcash").reduce((s, o) => s + o.total, 0),
       card:  subset.filter(o => o.paymentMethod === "card").reduce((s, o) => s + o.total, 0),
     };
-  }, [completedOrders]);
+  }, [billedOrders]);
 
   return {
     cupsToday,
