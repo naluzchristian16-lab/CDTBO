@@ -36,8 +36,9 @@ const validateConfig = (): { valid: boolean; missingKeys: string[] } => {
 
 const configValidation = validateConfig();
 
-let auth: any = null;
-let db: any = null;
+// ✅ FIX: Use let to allow assignment after validation
+let auth: ReturnType<typeof getAuth> | null = null;
+let db: ReturnType<typeof getFirestore> | null = null;
 let initError: Error | null = null;
 
 if (configValidation.valid) {
@@ -49,15 +50,17 @@ if (configValidation.valid) {
     // ── Offline persistence ────────────────────────────────────────────────────
     // Queues writes when offline and syncs when back online.
     // "failed-precondition" fires when multiple tabs are open — safe to ignore.
-    enableIndexedDbPersistence(db).catch((err) => {
-      if (err.code === "failed-precondition") {
-        console.warn("⚠️ Firestore persistence: multiple tabs open. Offline mode may be limited.");
-      } else if (err.code === "unimplemented") {
-        console.warn("⚠️ Firestore persistence: browser not supported. App will work online-only.");
-      } else {
-        console.warn("⚠️ Firestore persistence error:", err.message);
-      }
-    });
+    if (db) {
+      enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code === "failed-precondition") {
+          console.warn("⚠️ Firestore persistence: multiple tabs open. Offline mode may be limited.");
+        } else if (err.code === "unimplemented") {
+          console.warn("⚠️ Firestore persistence: browser not supported. App will work online-only.");
+        } else {
+          console.warn("⚠️ Firestore persistence error:", err.message);
+        }
+      });
+    }
 
     console.log("✅ Firebase initialized successfully");
   } catch (error) {
@@ -78,9 +81,18 @@ if (configValidation.valid) {
   );
 }
 
-// ── Export with error checking ────────────────────────────────────────────────
-export { auth, db };
+// ✅ FIX: Proper exports - explicitly export auth and db
+// This ensures they're available and not minified incorrectly during build
+const exportAuth = auth;
+const exportDb = db;
 
+export const authExport = exportAuth;
+export const dbExport = exportDb;
+
+// Also export with standard names for compatibility
+export { exportAuth as auth, exportDb as db };
+
+// ✅ FIX: Export helper functions
 export function getFirebaseError(): Error | null {
   return initError;
 }
