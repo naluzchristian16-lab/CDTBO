@@ -9,11 +9,15 @@ export function useOrders() {
   const isOnline = useOnlineStatus();
 
   // ── Live query from IndexedDB — works offline ─────────────────────────────
-  const orders: Order[] = useLiveQuery(
-    () => localDb.orders.orderBy("createdAt").reverse().toArray(), [], []
-  ) ?? [];
+  // undefined = Dexie still resolving; [] = resolved but empty (no orders yet)
+  const rawOrders = useLiveQuery(
+    () => localDb.orders.orderBy("createdAt").reverse().toArray(), []
+  );
 
-  const loading = orders.length === 0;
+  const orders: Order[] = rawOrders ?? [];
+
+  // loading is true ONLY while Dexie hasn't resolved yet (undefined), not when empty
+  const loading = rawOrders === undefined;
 
   // ── Write ops ─────────────────────────────────────────────────────────────
 
