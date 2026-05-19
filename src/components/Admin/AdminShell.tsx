@@ -42,6 +42,9 @@ export default function AdminShell() {
     expenses:    expensesCtx.expenses,
   });
 
+  // ✅ FIX: Check if any context is still loading
+  const isLoading = ordersCtx.loading || ingredientsCtx.loading || expensesCtx.loading;
+
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background:"#FAF6EF" }}>
 
@@ -67,30 +70,54 @@ export default function AdminShell() {
 
       {/* Tab content */}
       <div style={{ flex:1, overflowY:"auto" }}>
-        {tab === "dashboard" && (
-          <Dashboard
-            orders={ordersCtx}
-            expenses={expensesCtx}
-            ingredients={ingredientsCtx}
-            analytics={analyticsCtx}
-            restock={restockCtx}
-          />
-        )}
-        {tab === "inventory"      && <Inventory   ingredients={ingredientsCtx} />}
-        {tab === "recipes"        && <Recipes     ingredients={ingredientsCtx} />}
-        {tab === "expenses"       && <Expenses    expenses={expensesCtx} />}
-        {tab === "restock"        && (
-          <RestockLog
-            restock={restockCtx}
-            suppliers={suppliersCtx}
-            ingredients={ingredientsCtx}
-          />
-        )}
-        {tab === "reconciliation" && (
-          <Reconciliation
-            reconciliation={reconciliationCtx}
-            analytics={analyticsCtx}
-          />
+        {/* ✅ FIX: Show loading state instead of blank page */}
+        {isLoading ? (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            color: "#8A6040",
+            gap: 12,
+            background: "#FAF6EF",
+          }}>
+            <div style={{ fontSize: 48 }}>⏳</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#3B1F0E" }}>
+              Loading admin data...
+            </div>
+            <div style={{ fontSize: 12, color: "#C8A98A" }}>
+              Syncing with Firebase
+            </div>
+          </div>
+        ) : (
+          <>
+            {tab === "dashboard" && (
+              <Dashboard
+                orders={ordersCtx}
+                expenses={expensesCtx}
+                ingredients={ingredientsCtx}
+                analytics={analyticsCtx}
+                restock={restockCtx}
+              />
+            )}
+            {tab === "inventory"      && <Inventory   ingredients={ingredientsCtx} />}
+            {tab === "recipes"        && <Recipes     ingredients={ingredientsCtx} />}
+            {tab === "expenses"       && <Expenses    expenses={expensesCtx} />}
+            {tab === "restock"        && (
+              <RestockLog
+                restock={restockCtx}
+                suppliers={suppliersCtx}
+                ingredients={ingredientsCtx}
+              />
+            )}
+            {tab === "reconciliation" && (
+              <Reconciliation
+                reconciliation={reconciliationCtx}
+                analytics={analyticsCtx}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
