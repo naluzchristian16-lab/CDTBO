@@ -6,10 +6,12 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { useOrders }      from "./hooks/useOrders";
 import { useIngredients } from "./hooks/useIngredients";
 import { useIsMobile }    from "./hooks/useIsMobile";
+import { useSyncStatus }  from "./hooks/useSyncStatus";   // ← NEW
 
 import { categories, products } from "./data/products";
 import { CartItem, OrderType, PaymentMethod } from "./types";
-import AdminShell from "./components/Admin/AdminShell";
+import AdminShell  from "./components/Admin/AdminShell";
+import SyncBanner  from "./components/SyncBanner";         // ← NEW
 
 const fonts = document.createElement("link");
 fonts.rel = "stylesheet";
@@ -18,7 +20,7 @@ document.head.appendChild(fonts);
 
 /* ─── Styles ─────────────────────────────────────────────────────────────── */
 const S: Record<string, React.CSSProperties> = {
-  root:         { display:"flex", height:"100vh", background:"#FAF6EF", fontFamily:"'Barlow', sans-serif", overflow:"hidden" },
+  root:         { display:"flex", height:"100dvh", background:"#FAF6EF", fontFamily:"'Barlow', sans-serif", overflow:"hidden" },
   sidebar:      { width:190, background:"#3B1F0E", display:"flex", flexDirection:"column", flexShrink:0 },
   sidebarLogo:  { padding:"16px 14px 12px", borderBottom:"1px solid #5a3020" },
   brand:        { fontFamily:"'Barlow Condensed', sans-serif", fontWeight:900, fontSize:22, color:"#F5ECD7", lineHeight:1.1, letterSpacing:0.5 },
@@ -234,22 +236,25 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [view, setView]       = useState("cashier");
+  const [view, setView]         = useState("cashier");
   const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") || "");
 
-  const [cart, setCart]             = useState<CartItem[]>([]);
-  const [category, setCategory]     = useState("All Products");
-  const [search, setSearch]         = useState("");
-  const [orderType, setOrderType]   = useState<OrderType>("dine-in");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash"); // NEW
-  const [deliveryFee, setDeliveryFee] = useState("");
-  const [discount, setDiscount]       = useState("");
-  const [cash, setCash]               = useState("");
-  const [cartOpen, setCartOpen]       = useState(false);
+  const [cart, setCart]                   = useState<CartItem[]>([]);
+  const [category, setCategory]           = useState("All Products");
+  const [search, setSearch]               = useState("");
+  const [orderType, setOrderType]         = useState<OrderType>("dine-in");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [deliveryFee, setDeliveryFee]     = useState("");
+  const [discount, setDiscount]           = useState("");
+  const [cash, setCash]                   = useState("");
+  const [cartOpen, setCartOpen]           = useState(false);
 
   const isMobile       = useIsMobile();
   const ordersCtx      = useOrders();
   const ingredientsCtx = useIngredients();
+
+  // ── NEW: sync engine — mount once at root ─────────────────────────────────
+  const sync = useSyncStatus();
 
   /* ── Auth ── */
   const login = async () => {
@@ -329,7 +334,7 @@ export default function App() {
       deviceId,
       items:         cart,
       orderType,
-      paymentMethod,            // NEW — passed to Firestore
+      paymentMethod,
       deliveryFee:   Number(deliveryFee || 0),
       discount:      Number(discount || 0),
       cash:          paymentMethod === "cash" ? Number(cash || 0) : total,
@@ -434,11 +439,10 @@ export default function App() {
           </div>
         )}
         {deliveryFee && <div style={S.calcRow}><span>Delivery</span><span>+₱{deliveryFee}</span></div>}
-        {discount && <div style={S.calcRow}><span>Discount</span><span>-₱{discount}</span></div>}
+        {discount    && <div style={S.calcRow}><span>Discount</span><span>-₱{discount}</span></div>}
 
         <div style={S.calcTotal}><span>TOTAL</span><span>₱{total}</span></div>
 
-        {/* ── Payment method selector (NEW) ── */}
         <PaymentSelector value={paymentMethod} onChange={setPaymentMethod} />
 
         <div style={S.footerInputs}>
@@ -446,7 +450,6 @@ export default function App() {
             style={{ flex:1, padding:"7px 8px", border:"1px solid #DDD0C0", borderRadius:6, fontFamily:"'Barlow', sans-serif", fontSize:12, color:"#3B1F0E", background:"#FAF6EF", outline:"none" }}
             placeholder="Discount ₱" value={discount} onChange={e => setDiscount(e.target.value)}
           />
-          {/* Cash input only shown for cash payment */}
           {paymentMethod === "cash" && (
             <input
               style={{ flex:1, padding:"7px 8px", border:"1px solid #DDD0C0", borderRadius:6, fontFamily:"'Barlow', sans-serif", fontSize:12, color:"#3B1F0E", background:"#FAF6EF", outline:"none" }}
@@ -477,150 +480,159 @@ export default function App() {
 
   /* ─── Main render ──────────────────────────────────────────────────────── */
   return (
-    <div style={{ ...S.root, paddingBottom: isMobile ? 60 : 0 }}>
+    // ── height:"100dvh" handles mobile browser chrome collapsing ────────────
+    <div style={{ ...S.root, flexDirection:"column", paddingBottom: isMobile ? 60 : 0 }}>
 
-      {/* Sidebar (desktop only) */}
-      {!isMobile && (
-        <div style={S.sidebar}>
-          <div style={S.sidebarLogo}>
-            <div style={S.brand}>COFFEE<br />D'TITOS'</div>
-            <div style={S.tagline}>Ang Hilig Mo Sa Kape</div>
-          </div>
-          <div style={S.navSection}>
-            <NavBtn active={view === "cashier"} onClick={() => setView("cashier")} icon="🧾">Cashier</NavBtn>
-            <NavBtn active={view === "kitchen"} onClick={() => setView("kitchen")} icon="🍵">
-              Kitchen {ordersCtx.activeOrders.length > 0 && (
-                <span style={{ marginLeft:"auto", background:"#C0622A", color:"#fff", borderRadius:10, fontSize:10, fontWeight:700, padding:"1px 6px" }}>{ordersCtx.activeOrders.length}</span>
-              )}
-            </NavBtn>
-            <NavBtn active={view === "admin"} onClick={() => setView("admin")} icon="📊">Admin</NavBtn>
-            <NavBtn onClick={logout} icon="🚪">Logout</NavBtn>
-          </div>
-          {view === "cashier" && (
-            <div style={S.catSection}>
-              <span style={S.catLabel}>Menu</span>
-              {categories.map(c => <CatBtn key={c} active={category === c} onClick={() => setCategory(c)}>{c}</CatBtn>)}
+      {/* ── NEW: Sync banner — sticky at the very top, always visible ──────── */}
+      <SyncBanner sync={sync} />
+
+      {/* ── Main content row (sidebar + active view + cart) ─────────────── */}
+      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+
+        {/* Sidebar (desktop only) */}
+        {!isMobile && (
+          <div style={S.sidebar}>
+            <div style={S.sidebarLogo}>
+              <div style={S.brand}>COFFEE<br />D'TITOS'</div>
+              <div style={S.tagline}>Ang Hilig Mo Sa Kape</div>
             </div>
-          )}
-          <div style={S.sidebarFooter}>
-            <div style={S.deviceBadge}><span style={{ fontSize:14, color:"#C0622A" }}>🖥</span>{deviceId}</div>
+            <div style={S.navSection}>
+              <NavBtn active={view === "cashier"} onClick={() => setView("cashier")} icon="🧾">Cashier</NavBtn>
+              <NavBtn active={view === "kitchen"} onClick={() => setView("kitchen")} icon="🍵">
+                Kitchen {ordersCtx.activeOrders.length > 0 && (
+                  <span style={{ marginLeft:"auto", background:"#C0622A", color:"#fff", borderRadius:10, fontSize:10, fontWeight:700, padding:"1px 6px" }}>{ordersCtx.activeOrders.length}</span>
+                )}
+              </NavBtn>
+              <NavBtn active={view === "admin"} onClick={() => setView("admin")} icon="📊">Admin</NavBtn>
+              <NavBtn onClick={logout} icon="🚪">Logout</NavBtn>
+            </div>
+            {view === "cashier" && (
+              <div style={S.catSection}>
+                <span style={S.catLabel}>Menu</span>
+                {categories.map(c => <CatBtn key={c} active={category === c} onClick={() => setCategory(c)}>{c}</CatBtn>)}
+              </div>
+            )}
+            <div style={S.sidebarFooter}>
+              <div style={S.deviceBadge}><span style={{ fontSize:14, color:"#C0622A" }}>🖥</span>{deviceId}</div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Cashier view */}
-      {view === "cashier" && (
-        <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-          <div style={S.productArea}>
-            {isMobile && (
-              <div style={{ overflowX:"auto", display:"flex", gap:6, padding:"8px 10px", background:"#3B1F0E", borderBottom:"1px solid #5a3020" }}>
-                {categories.map(c => (
-                  <button key={c} onClick={() => setCategory(c)} style={{
-                    padding:"5px 12px", borderRadius:16, whiteSpace:"nowrap",
-                    background: category === c ? "#C0622A" : "transparent",
-                    border: category === c ? "none" : "1px solid #5a3020",
-                    color: category === c ? "#fff" : "#C8A98A",
-                    fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Barlow', sans-serif",
-                  }}>{c}</button>
+        {/* Cashier view */}
+        {view === "cashier" && (
+          <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+            <div style={S.productArea}>
+              {isMobile && (
+                <div style={{ overflowX:"auto", display:"flex", gap:6, padding:"8px 10px", background:"#3B1F0E", borderBottom:"1px solid #5a3020" }}>
+                  {categories.map(c => (
+                    <button key={c} onClick={() => setCategory(c)} style={{
+                      padding:"5px 12px", borderRadius:16, whiteSpace:"nowrap",
+                      background: category === c ? "#C0622A" : "transparent",
+                      border: category === c ? "none" : "1px solid #5a3020",
+                      color: category === c ? "#fff" : "#C8A98A",
+                      fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Barlow', sans-serif",
+                    }}>{c}</button>
+                  ))}
+                </div>
+              )}
+
+              <div style={S.topbar}>
+                <div style={S.searchWrap}>
+                  <span style={{ fontSize:15, color:"#A0856A" }}>🔍</span>
+                  <input style={S.searchInput} placeholder="Search drinks…" value={search} onChange={e => setSearch(e.target.value)} />
+                </div>
+                <div style={S.otWrap}>
+                  {(["dine-in","pickup","delivery"] as OrderType[]).map(t => (
+                    <OtBtn key={t} active={orderType === t} onClick={() => setOrderType(t)}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </OtBtn>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{
+                flex:1, overflowY:"auto", padding:10,
+                display:"grid", gap:8, alignContent:"start",
+                gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(148px, 1fr))",
+              }}>
+                {filtered.map(p => (
+                  <div key={p.id} style={{ background:"#fff", border:"1px solid #E8DDD0", borderRadius:10, padding:10 }}>
+                    <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:700, fontSize:13, color:"#3B1F0E", lineHeight:1.2, marginBottom:8 }}>{p.name}</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                      {p.singleSize ? (
+                        <SizeBtn label={p.size!.label} price={p.size!.price} onClick={() => { addToCart(p, p.size!.label, p.size!.price); if (isMobile) setCartOpen(true); }} />
+                      ) : (
+                        p.sizes!.map(s => (
+                          <SizeBtn key={s.label} label={s.label} price={s.price} onClick={() => { addToCart(p, s.label, s.price); if (isMobile) setCartOpen(true); }} />
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop cart */}
+            {!isMobile && (
+              <div style={S.cartPanel}>
+                <div style={S.cartHeader}>
+                  <span style={S.cartTitle}>ORDER</span>
+                  {cart.length > 0 && <span style={S.cartCount}>{cart.reduce((a,b)=>a+b.qty,0)} items</span>}
+                </div>
+                <CartContent />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Kitchen view */}
+        {view === "kitchen" && (
+          <div style={S.kitchenArea}>
+            <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:24, color:"#3B1F0E", marginBottom:16 }}>
+              KITCHEN — {ordersCtx.activeOrders.length} active
+            </div>
+            {ordersCtx.activeOrders.length === 0 ? (
+              <div style={{ textAlign:"center", color:"#C8A98A", marginTop:60, fontSize:14 }}>
+                <div style={{ fontSize:48 }}>✅</div>
+                <div style={{ marginTop:8, fontWeight:500 }}>All caught up!</div>
+              </div>
+            ) : (
+              <div style={S.kitchenGrid}>
+                {ordersCtx.activeOrders.map(o => (
+                  <div key={o.id} style={S.kitchenCard}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
+                      <div>
+                        <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:18, color:"#3B1F0E" }}>{o.orderNumber}</div>
+                        <div style={{ fontSize:11, color:"#8A6040", marginBottom:10 }}>
+                          {o.orderType.toUpperCase()} · {new Date(o.createdAt).toLocaleTimeString("en-PH", { hour:"2-digit", minute:"2-digit" })} · {o.deviceId}
+                        </div>
+                      </div>
+                      <span style={{ background:"#FFF0E8", color:"#C0622A", fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:10, border:"1px solid #C0622A40" }}>PENDING</span>
+                    </div>
+                    <div style={{ marginBottom:12 }}>
+                      {o.items.map((item, i) => (
+                        <div key={i} style={S.kitchenItem}>
+                          <span style={{ fontWeight:700 }}>{item.qty}×</span> {item.name}
+                          <span style={{ color:"#8A6040" }}> — {item.sizeType}</span>
+                          {item.addons?.includes("Extra Shot") && <span style={{ color:"#C0622A", fontSize:11 }}> + Extra Shot</span>}
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => ordersCtx.markComplete(o.id)} style={{
+                      width:"100%", padding:"9px", background:"#3B1F0E", border:"none", borderRadius:7,
+                      color:"#F5ECD7", fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:14, cursor:"pointer",
+                    }}>✓ MARK COMPLETE</button>
+                  </div>
                 ))}
               </div>
             )}
-
-            <div style={S.topbar}>
-              <div style={S.searchWrap}>
-                <span style={{ fontSize:15, color:"#A0856A" }}>🔍</span>
-                <input style={S.searchInput} placeholder="Search drinks…" value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
-              <div style={S.otWrap}>
-                {(["dine-in","pickup","delivery"] as OrderType[]).map(t => (
-                  <OtBtn key={t} active={orderType === t} onClick={() => setOrderType(t)}>
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </OtBtn>
-                ))}
-              </div>
-            </div>
-
-            <div style={{
-              flex:1, overflowY:"auto", padding:10,
-              display:"grid", gap:8, alignContent:"start",
-              gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(148px, 1fr))",
-            }}>
-              {filtered.map(p => (
-                <div key={p.id} style={{ background:"#fff", border:"1px solid #E8DDD0", borderRadius:10, padding:10 }}>
-                  <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:700, fontSize:13, color:"#3B1F0E", lineHeight:1.2, marginBottom:8 }}>{p.name}</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    {p.singleSize ? (
-                      <SizeBtn label={p.size!.label} price={p.size!.price} onClick={() => { addToCart(p, p.size!.label, p.size!.price); if (isMobile) setCartOpen(true); }} />
-                    ) : (
-                      p.sizes!.map(s => (
-                        <SizeBtn key={s.label} label={s.label} price={s.price} onClick={() => { addToCart(p, s.label, s.price); if (isMobile) setCartOpen(true); }} />
-                      ))
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
+        )}
 
-          {/* Desktop cart */}
-          {!isMobile && (
-            <div style={S.cartPanel}>
-              <div style={S.cartHeader}>
-                <span style={S.cartTitle}>ORDER</span>
-                {cart.length > 0 && <span style={S.cartCount}>{cart.reduce((a,b)=>a+b.qty,0)} items</span>}
-              </div>
-              <CartContent />
-            </div>
-          )}
-        </div>
-      )}
+        {/* Admin view */}
+        {view === "admin" && <AdminShell />}
 
-      {/* Kitchen view */}
-      {view === "kitchen" && (
-        <div style={S.kitchenArea}>
-          <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:24, color:"#3B1F0E", marginBottom:16 }}>
-            KITCHEN — {ordersCtx.activeOrders.length} active
-          </div>
-          {ordersCtx.activeOrders.length === 0 ? (
-            <div style={{ textAlign:"center", color:"#C8A98A", marginTop:60, fontSize:14 }}>
-              <div style={{ fontSize:48 }}>✅</div>
-              <div style={{ marginTop:8, fontWeight:500 }}>All caught up!</div>
-            </div>
-          ) : (
-            <div style={S.kitchenGrid}>
-              {ordersCtx.activeOrders.map(o => (
-                <div key={o.id} style={S.kitchenCard}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
-                    <div>
-                      <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:18, color:"#3B1F0E" }}>{o.orderNumber}</div>
-                      <div style={{ fontSize:11, color:"#8A6040", marginBottom:10 }}>
-                        {o.orderType.toUpperCase()} · {new Date(o.createdAt).toLocaleTimeString("en-PH", { hour:"2-digit", minute:"2-digit" })} · {o.deviceId}
-                      </div>
-                    </div>
-                    <span style={{ background:"#FFF0E8", color:"#C0622A", fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:10, border:"1px solid #C0622A40" }}>PENDING</span>
-                  </div>
-                  <div style={{ marginBottom:12 }}>
-                    {o.items.map((item, i) => (
-                      <div key={i} style={S.kitchenItem}>
-                        <span style={{ fontWeight:700 }}>{item.qty}×</span> {item.name}
-                        <span style={{ color:"#8A6040" }}> — {item.sizeType}</span>
-                        {item.addons?.includes("Extra Shot") && <span style={{ color:"#C0622A", fontSize:11 }}> + Extra Shot</span>}
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => ordersCtx.markComplete(o.id)} style={{
-                    width:"100%", padding:"9px", background:"#3B1F0E", border:"none", borderRadius:7,
-                    color:"#F5ECD7", fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:14, cursor:"pointer",
-                  }}>✓ MARK COMPLETE</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Admin view */}
-      {view === "admin" && <AdminShell />}
+      </div>{/* end main content row */}
 
       {/* Mobile bottom nav */}
       {isMobile && <BottomTabBar view={view} setView={setView} activeCount={ordersCtx.activeOrders.length} />}
@@ -645,6 +657,7 @@ export default function App() {
           <CartContent />
         </CartDrawer>
       )}
+
     </div>
   );
 }
