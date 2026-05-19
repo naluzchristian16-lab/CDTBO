@@ -571,7 +571,7 @@ function AppContent() {
       {!isMobile && (
         <div style={S.sidebar}>
           <div style={S.sidebarLogo}>
-            <div style={S.brand}>CD'T</div>
+            <div style={S.brand}>Coffee D'Titos'</div>
             <div style={S.tagline}>POS</div>
           </div>
 
