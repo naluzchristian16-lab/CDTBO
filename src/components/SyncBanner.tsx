@@ -28,6 +28,9 @@ function formatTime(iso: string | null): string {
 }
 
 export default function SyncBanner({ sync }: Props) {
+  // Safety guard: if sync is not yet available, render nothing
+  if (!sync) return null;
+
   const { isOnline, isSyncing, pendingCount, lastSyncedAt, lastError, manualSync } = sync;
 
   // ── Don't render anything if online, synced, and no issues ───────────────
@@ -46,7 +49,7 @@ export default function SyncBanner({ sync }: Props) {
   }
 
   // ── Offline or pending writes banner ─────────────────────────────────────
-  const bgColor    = isOnline ? "#FFF8E1" : "#FFF0E8";
+  const bgColor     = isOnline ? "#FFF8E1" : "#FFF0E8";
   const borderColor = isOnline ? "#D4A017" : "#C0622A";
   const textColor   = isOnline ? "#7A5C00" : "#C0622A";
 
