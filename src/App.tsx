@@ -496,7 +496,7 @@ function AppContent() {
       {/* Main content */}
       <div style={S.productArea}>
         {/* Sync banner */}
-        <SyncBanner />
+        <SyncBanner sync={sync} />
 
         {/* Cashier view */}
         {view === "cashier" && (
