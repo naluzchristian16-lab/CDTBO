@@ -1,45 +1,59 @@
-import { useEffect, useState } from "react";
-import {
-  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { useLiveQuery }    from "dexie-react-hooks";
+import { localDb }         from "../db/localDb";
+import { syncWrite }       from "../db/syncEngine";
+import { useOnlineStatus } from "./useOnlineStatus";
 import { Order, CartItem, OrderType, PaymentMethod } from "../types";
+import { v4 as uuidv4 }    from "uuid";
 
 export function useOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, snap => {
-      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
-      setLoading(false);
-    });
-    return unsub;
-  }, []);
+  // ── Live query from IndexedDB — works offline ─────────────────────────────
+  const orders: Order[] = useLiveQuery(
+    () => localDb.orders.orderBy("createdAt").reverse().toArray(), [], []
+  ) ?? [];
+
+  const loading = orders.length === 0;
+
+  // ── Write ops ─────────────────────────────────────────────────────────────
 
   const placeOrder = async (payload: {
-    orderNumber: string;
-    deviceId: string;
-    items: CartItem[];
-    orderType: OrderType;
-    paymentMethod: PaymentMethod;   // NEW
-    deliveryFee: number;
-    discount: number;
-    cash: number;
-    total: number;
+    orderNumber:   string;
+    deviceId:      string;
+    items:         CartItem[];
+    orderType:     OrderType;
+    paymentMethod: PaymentMethod;
+    deliveryFee:   number;
+    discount:      number;
+    cash:          number;
+    total:         number;
   }) => {
-    await addDoc(collection(db, "orders"), {
+    const id    = uuidv4();
+    const order: Order = {
+      id,
       ...payload,
-      status: "pending",
+      status:    "pending",
       createdAt: Date.now(),
-    });
+    };
+    await syncWrite({ col: "orders", docId: id, op: "set", payload: order, isOnline });
+    return id;
   };
 
   const markComplete = async (orderId: string) =>
-    updateDoc(doc(db, "orders", orderId), { status: "completed" });
+    syncWrite({
+      col: "orders", docId: orderId, op: "update",
+      payload: { status: "completed" },
+      isOnline,
+    });
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
+  const voidOrder = async (orderId: string) =>
+    syncWrite({
+      col: "orders", docId: orderId, op: "update",
+      payload: { status: "voided" },
+      isOnline,
+    });
+
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const activeOrders = orders
     .filter(o => o.status === "pending")
@@ -64,5 +78,6 @@ export function useOrders() {
     todayRevenue,
     placeOrder,
     markComplete,
+    voidOrder,
   };
 }
