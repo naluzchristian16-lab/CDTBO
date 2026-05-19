@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { auth } from "./firebase";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
@@ -67,19 +67,34 @@ const S: Record<string, React.CSSProperties> = {
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
 
 /* ─── Numpad ─────────────────────────────────────────────────────────────── */
-function Numpad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// FIX #1 & #3: Added onFocus callback + physical keyboard support
+function Numpad({ value, onChange, onFocus }: { value: string; onChange: (v: string) => void; onFocus?: () => void }) {
   const press = (key: string) => {
+    if (onFocus) onFocus();
     if (key === "⌫") {
       onChange(value.slice(0, -1));
     } else if (key === "C") {
       onChange("");
     } else {
-      // Prevent leading zeros and multiple dots
       if (key === "." && value.includes(".")) return;
       if (value === "0" && key !== ".") { onChange(key); return; }
       onChange(value + key);
     }
   };
+
+  // FIX #3: Physical keyboard — digits, dot, backspace, escape all work
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key >= "0" && e.key <= "9") { press(e.key); }
+      else if (e.key === ".") { press("."); }
+      else if (e.key === "Backspace") { press("⌫"); }
+      else if (e.key === "Escape") { press("C"); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
 
   const keys = ["7","8","9","4","5","6","1","2","3","C","0","⌫"];
 
@@ -297,6 +312,8 @@ function AppContent() {
   const [cartOpen, setCartOpen]           = useState(false);
   // Which field the numpad is targeting: "cash" | "delivery" | "discount"
   const [numpadTarget, setNumpadTarget]   = useState<"cash" | "delivery" | "discount">("cash");
+  // FIX #1: Track whether cashier has manually tapped/edited the cash field
+  const [cashFocused, setCashFocused]     = useState(false);
 
   const isMobile       = useIsMobile();
   const ordersCtx      = useOrders();
@@ -360,17 +377,18 @@ function AppContent() {
 
   const subtotal = cart.reduce((a, b) => a + computeItem(b), 0);
   const total    = subtotal + Number(deliveryFee || 0) - Number(discount || 0);
-  const change   = cash ? Number(cash) - total : 0;
 
   /* ── Numpad handler ── */
+  // FIX #1: Mark cash as manually focused when cashier types into it
   const handleNumpad = (v: string) => {
-    if (numpadTarget === "cash") setCash(v);
+    if (numpadTarget === "cash") { setCashFocused(true); setCash(v); }
     else if (numpadTarget === "delivery") setDeliveryFee(v);
     else if (numpadTarget === "discount") setDiscount(v);
   };
 
+  // FIX #1: Numpad operates on empty string for cash until cashier taps the field
   const numpadValue =
-    numpadTarget === "cash" ? cash :
+    numpadTarget === "cash" ? (cashFocused ? cash : "") :
     numpadTarget === "delivery" ? deliveryFee : discount;
 
   const formatOrderNum = () => {
@@ -388,6 +406,10 @@ function AppContent() {
 
   const checkout = async () => {
     if (!cart.length) return;
+    // FIX #1: If cash field was never manually edited, assume exact amount (total)
+    const tenderedCash = paymentMethod === "cash"
+      ? (cashFocused ? Number(cash || 0) : total)
+      : total;
     await ordersCtx.placeOrder({
       orderNumber:   formatOrderNum(),
       deviceId,
@@ -396,12 +418,13 @@ function AppContent() {
       paymentMethod,
       deliveryFee:   Number(deliveryFee || 0),
       discount:      Number(discount || 0),
-      cash:          paymentMethod === "cash" ? Number(cash || 0) : total,
+      cash:          tenderedCash,
       total,
     });
     await ingredientsCtx.deductStockForOrder(cart);
     setCart([]);
     setCash("");
+    setCashFocused(false);
     setDiscount("");
     setDeliveryFee("");
     setCartOpen(false);
@@ -532,9 +555,9 @@ function AppContent() {
 
         {paymentMethod === "cash" && (
           <>
-            {/* Cash display box */}
+            {/* FIX #1: Shows total by default (grayed). Tap to enter a different amount. */}
             <div
-              onClick={() => setNumpadTarget("cash")}
+              onClick={() => { setNumpadTarget("cash"); setCashFocused(true); }}
               style={{
                 padding:"8px 10px", marginBottom:6,
                 border:`2px solid ${numpadTarget === "cash" ? "#C0622A" : "#DDD0C0"}`,
@@ -543,23 +566,50 @@ function AppContent() {
               }}
             >
               <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>💵 Cash Tendered</div>
-              <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:22, color:"#3B1F0E" }}>
-                ₱{cash || "0"}
+              <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:22, color: cashFocused ? "#3B1F0E" : "#8A6040" }}>
+                ₱{cashFocused ? (cash || "0") : (total > 0 ? total : "0")}
+                {!cashFocused && total > 0 && (
+                  <span style={{ fontSize:11, fontWeight:400, marginLeft:6, color:"#C0622A" }}>tap to edit</span>
+                )}
               </div>
             </div>
 
-            {/* Numpad — only shown when cash is payment method */}
-            <Numpad value={numpadValue} onChange={handleNumpad} />
+            {/* FIX #3: Keyboard input works — digits, dot, Backspace, Escape */}
+            <Numpad
+              value={numpadValue}
+              onChange={handleNumpad}
+              onFocus={() => { if (numpadTarget === "cash") setCashFocused(true); }}
+            />
 
-            {change > 0 && <div style={S.changeRow}><span>Change</span><span>₱{change.toFixed(2)}</span></div>}
+            {/* FIX #1: Change row only appears after cashier manually enters an amount */}
+            {cashFocused && Number(cash) >= total && total > 0 && (
+              <div style={S.changeRow}>
+                <span>Change</span>
+                <span>₱{(Number(cash) - total).toFixed(2)}</span>
+              </div>
+            )}
           </>
         )}
 
-        <PaymentSelector value={paymentMethod} onChange={m => { setPaymentMethod(m); if (m !== "cash") setNumpadTarget("delivery"); else setNumpadTarget("cash"); }} />
+        {/* FIX #1: Reset cash state when switching payment methods */}
+        <PaymentSelector value={paymentMethod} onChange={m => {
+          setPaymentMethod(m);
+          setCashFocused(false);
+          setCash("");
+          if (m !== "cash") setNumpadTarget("delivery");
+          else setNumpadTarget("cash");
+        }} />
 
         <div style={{ display:"flex", gap:6 }}>
           <PrimaryBtn onClick={() => setCart([])} disabled={!cart.length}>CLEAR</PrimaryBtn>
-          <PrimaryBtn onClick={checkout} disabled={!cart.length || (paymentMethod === "cash" && (!cash || Number(cash) < total))}>CHECKOUT</PrimaryBtn>
+          {/* FIX #1: Always enabled for exact-change (cashFocused=false).
+              Only blocks if cashier typed an amount that's too low. */}
+          <PrimaryBtn
+            onClick={checkout}
+            disabled={!cart.length || (paymentMethod === "cash" && cashFocused && Number(cash) < total)}
+          >
+            CHECKOUT
+          </PrimaryBtn>
         </div>
       </div>
     </>
