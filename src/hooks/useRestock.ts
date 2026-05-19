@@ -1,66 +1,67 @@
-import { useEffect, useState } from "react";
-import {
-  collection, addDoc, onSnapshot,
-  query, orderBy, writeBatch, doc, increment,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { useLiveQuery }    from "dexie-react-hooks";
+import { localDb }         from "../db/localDb";
+import { syncWrite }       from "../db/syncEngine";
+import { useOnlineStatus } from "./useOnlineStatus";
 import { RestockEntry, Ingredient } from "../types";
+import { v4 as uuidv4 }    from "uuid";
 
 export function useRestock(ingredients: Ingredient[]) {
-  const [entries, setEntries] = useState<RestockEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    const q = query(collection(db, "restockLog"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, snap => {
-      setEntries(snap.docs.map(d => ({ id: d.id, ...d.data() } as RestockEntry)));
-      setLoading(false);
-    });
-    return unsub;
-  }, []);
+  // ── Live query from IndexedDB — works offline ─────────────────────────────
+  const entries: RestockEntry[] = useLiveQuery(
+    () => localDb.restockLog.orderBy("createdAt").reverse().toArray(), [], []
+  ) ?? [];
 
-  /**
-   * Log a restock purchase.
-   * - Writes a RestockEntry to /restockLog
-   * - Increments /ingredients/{id}.stock by qtyAdded
-   * - Updates /ingredients/{id}.costPerUnit using weighted average:
-   *     newCost = (oldStock × oldCost + qtyAdded × newCost) / (oldStock + qtyAdded)
-   *   This keeps COGS accurate even if supplier prices fluctuate.
-   */
-  const logRestock = async (entry: Omit<RestockEntry, "id" | "createdAt" | "totalCost">) => {
-    const totalCost = entry.qtyAdded * entry.costPerUnit;
+  const loading = entries.length === 0;
+
+  // ── logRestock ────────────────────────────────────────────────────────────
+  // Two writes in one call:
+  //   1. RestockEntry → restockLog
+  //   2. Ingredient stock + weighted-average costPerUnit → ingredients
+  // Both go through syncWrite so they're queued offline correctly.
+
+  const logRestock = async (
+    entry: Omit<RestockEntry, "id" | "createdAt" | "totalCost">
+  ) => {
     const ingredient = ingredients.find(i => i.id === entry.ingredientId);
     if (!ingredient) throw new Error("Ingredient not found");
 
-    const oldStock   = ingredient.stock;
-    const oldCost    = ingredient.costPerUnit;
-    const newStock   = oldStock + entry.qtyAdded;
+    const totalCost    = entry.qtyAdded * entry.costPerUnit;
+    const oldStock     = ingredient.stock;
+    const oldCost      = ingredient.costPerUnit;
+    const newStock     = oldStock + entry.qtyAdded;
 
     // Weighted average cost per unit
     const weightedCost = newStock > 0
       ? (oldStock * oldCost + entry.qtyAdded * entry.costPerUnit) / newStock
       : entry.costPerUnit;
 
-    const batch = writeBatch(db);
-
-    // 1. Add restock log entry
-    const logRef = doc(collection(db, "restockLog"));
-    batch.set(logRef, {
+    // 1. Log the restock entry
+    const logId = uuidv4();
+    const restockDoc: RestockEntry = {
+      id: logId,
       ...entry,
       totalCost,
       createdAt: Date.now(),
+    };
+    await syncWrite({
+      col: "restockLog", docId: logId, op: "set",
+      payload: restockDoc, isOnline,
     });
 
-    // 2. Update ingredient stock + weighted average cost
-    batch.update(doc(db, "ingredients", entry.ingredientId), {
-      stock: increment(entry.qtyAdded),
-      costPerUnit: parseFloat(weightedCost.toFixed(4)),
+    // 2. Update ingredient stock + weighted cost
+    await syncWrite({
+      col: "ingredients", docId: entry.ingredientId, op: "update",
+      payload: {
+        stock:       newStock,
+        costPerUnit: parseFloat(weightedCost.toFixed(4)),
+      },
+      isOnline,
     });
-
-    await batch.commit();
   };
 
-  // ── Derived helpers ──────────────────────────────────────────────────────────
+  // ── Derived helpers ───────────────────────────────────────────────────────
 
   const entriesForDate = (dateStr: string) =>
     entries.filter(e => e.date === dateStr);
