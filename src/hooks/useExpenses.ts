@@ -18,11 +18,15 @@ export function useExpenses() {
   const isOnline = useOnlineStatus();
 
   // ── Live query from IndexedDB — works offline ─────────────────────────────
-  const expenses: Expense[] = useLiveQuery(
-    () => localDb.expenses.orderBy("createdAt").reverse().toArray(), [], []
-  ) ?? [];
+  // undefined = Dexie still resolving; [] = resolved but empty
+  const rawExpenses = useLiveQuery(
+    () => localDb.expenses.orderBy("createdAt").reverse().toArray(), []
+  );
 
-  const loading = expenses.length === 0;
+  const expenses: Expense[] = rawExpenses ?? [];
+
+  // loading only while Dexie hasn't resolved yet — not when there are simply no expenses
+  const loading = rawExpenses === undefined;
 
   // ── Write ops ─────────────────────────────────────────────────────────────
 
