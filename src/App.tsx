@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { auth } from "./firebase";
-// ✅ FIX: Import ErrorBoundary for error handling
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -9,8 +8,8 @@ import { useOrders }      from "./hooks/useOrders";
 import { useIngredients } from "./hooks/useIngredients";
 import { useIsMobile }    from "./hooks/useIsMobile";
 import { useSyncStatus }  from "./hooks/useSyncStatus";
+import { useProducts }    from "./hooks/useProducts";
 
-import { categories, products } from "./data/products";
 import { CartItem, OrderType, PaymentMethod } from "./types";
 import AdminShell  from "./components/Admin/AdminShell";
 import SyncBanner  from "./components/SyncBanner";
@@ -37,7 +36,7 @@ const S: Record<string, React.CSSProperties> = {
   searchWrap:   { flex:1, display:"flex", alignItems:"center", background:"#fff", border:"1px solid #DDD0C0", borderRadius:8, padding:"0 10px", gap:8, minWidth:120 },
   searchInput:  { border:"none", background:"transparent", fontFamily:"'Barlow', sans-serif", fontSize:13, color:"#3B1F0E", padding:"8px 0", outline:"none", width:"100%" },
   otWrap:       { display:"flex", gap:4, flexWrap:"wrap" },
-  cartPanel:    { width:282, background:"#fff", borderLeft:"1px solid #E8DDD0", display:"flex", flexDirection:"column", flexShrink:0 },
+  cartPanel:    { width:300, background:"#fff", borderLeft:"1px solid #E8DDD0", display:"flex", flexDirection:"column", flexShrink:0 },
   cartHeader:   { padding:"12px 14px 10px", borderBottom:"1px solid #E8DDD0", display:"flex", alignItems:"center", justifyContent:"space-between" },
   cartTitle:    { fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:20, color:"#3B1F0E", letterSpacing:0.5 },
   cartCount:    { background:"#C0622A", color:"#fff", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20 },
@@ -50,11 +49,10 @@ const S: Record<string, React.CSSProperties> = {
   qtyNum:       { fontSize:13, fontWeight:700, color:"#3B1F0E", minWidth:16, textAlign:"center" },
   ciPrice:      { fontWeight:700, fontSize:13, color:"#C0622A" },
   emptyCart:    { flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", color:"#C8A98A", gap:8 },
-  cartFooter:   { padding:"12px 14px", borderTop:"1px solid #E8DDD0" },
+  cartFooter:   { padding:"10px 14px 12px", borderTop:"1px solid #E8DDD0" },
   calcRow:      { display:"flex", justifyContent:"space-between", fontSize:12, color:"#8A6040", marginBottom:4 },
   calcTotal:    { display:"flex", justifyContent:"space-between", fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:22, color:"#3B1F0E", marginTop:8, marginBottom:8 },
-  footerInputs: { display:"flex", gap:6, marginBottom:8 },
-  changeRow:    { display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:10, padding:"6px 8px", background:"#F0F7ED", borderRadius:6, color:"#3B6B28", fontWeight:600 },
+  changeRow:    { display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:8, padding:"6px 8px", background:"#F0F7ED", borderRadius:6, color:"#3B6B28", fontWeight:600 },
   kitchenArea:  { flex:1, overflowY:"auto", padding:16, background:"#FAF6EF" },
   kitchenGrid:  { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:12 },
   kitchenCard:  { background:"#fff", border:"1px solid #E8DDD0", borderRadius:12, padding:14 },
@@ -67,6 +65,53 @@ const S: Record<string, React.CSSProperties> = {
 };
 
 const DEVICE_IDS = ["POS1", "POS2", "POS3"];
+
+/* ─── Numpad ─────────────────────────────────────────────────────────────── */
+function Numpad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const press = (key: string) => {
+    if (key === "⌫") {
+      onChange(value.slice(0, -1));
+    } else if (key === "C") {
+      onChange("");
+    } else {
+      // Prevent leading zeros and multiple dots
+      if (key === "." && value.includes(".")) return;
+      if (value === "0" && key !== ".") { onChange(key); return; }
+      onChange(value + key);
+    }
+  };
+
+  const keys = ["7","8","9","4","5","6","1","2","3","C","0","⌫"];
+
+  return (
+    <div style={{ marginTop: 8, marginBottom: 8 }}>
+      <div style={{
+        display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5,
+      }}>
+        {keys.map(k => (
+          <button
+            key={k}
+            onClick={() => press(k)}
+            style={{
+              padding: "10px 0",
+              borderRadius: 7,
+              border: "1px solid #DDD0C0",
+              background: k === "C" ? "#FFF0E8" : k === "⌫" ? "#F5ECD7" : "#fff",
+              color: k === "C" ? "#C0622A" : "#3B1F0E",
+              fontFamily: "'Barlow Condensed', sans-serif",
+              fontWeight: 800,
+              fontSize: 16,
+              cursor: "pointer",
+              transition: "background 0.1s",
+            }}
+          >
+            {k}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ─── Reusable buttons ───────────────────────────────────────────────────── */
 function NavBtn({ active, onClick, icon, children }: { active?: boolean; onClick: () => void; icon: string; children: React.ReactNode }) {
@@ -138,7 +183,7 @@ function QtyBtn({ onClick, children }: { onClick: () => void; children: React.Re
 function PrimaryBtn({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
-      width:"100%", padding:"12px",
+      width:"100%", padding:"11px",
       background: disabled ? "#DDD0C0" : "#C0622A", border:"none", borderRadius:8,
       color: disabled ? "#B0956A" : "#fff",
       fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:16, letterSpacing:"1px",
@@ -191,7 +236,7 @@ function CartDrawer({ open, onClose, children }: { open: boolean; onClose: () =>
         boxShadow:"0 -4px 24px #00000020",
         transform: open ? "translateY(0)" : "translateY(100%)",
         transition:"transform 0.3s ease",
-        maxHeight:"85vh", display:"flex", flexDirection:"column",
+        maxHeight:"90vh", display:"flex", flexDirection:"column",
         paddingBottom:"env(safe-area-inset-bottom)",
       }}>
         <div style={{ padding:"10px 16px 0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -250,13 +295,14 @@ function AppContent() {
   const [discount, setDiscount]           = useState("");
   const [cash, setCash]                   = useState("");
   const [cartOpen, setCartOpen]           = useState(false);
+  // Which field the numpad is targeting: "cash" | "delivery" | "discount"
+  const [numpadTarget, setNumpadTarget]   = useState<"cash" | "delivery" | "discount">("cash");
 
   const isMobile       = useIsMobile();
   const ordersCtx      = useOrders();
   const ingredientsCtx = useIngredients();
-
-  // ── Sync engine — mount once at root ─────────────────────────────────────
-  const sync = useSyncStatus();
+  const productsCtx    = useProducts();
+  const sync           = useSyncStatus();
 
   /* ── Auth ── */
   const login = async () => {
@@ -316,6 +362,17 @@ function AppContent() {
   const total    = subtotal + Number(deliveryFee || 0) - Number(discount || 0);
   const change   = cash ? Number(cash) - total : 0;
 
+  /* ── Numpad handler ── */
+  const handleNumpad = (v: string) => {
+    if (numpadTarget === "cash") setCash(v);
+    else if (numpadTarget === "delivery") setDeliveryFee(v);
+    else if (numpadTarget === "discount") setDiscount(v);
+  };
+
+  const numpadValue =
+    numpadTarget === "cash" ? cash :
+    numpadTarget === "delivery" ? deliveryFee : discount;
+
   const formatOrderNum = () => {
     const now = new Date();
     const mm  = String(now.getMonth() + 1).padStart(2, "0");
@@ -350,11 +407,14 @@ function AppContent() {
     setCartOpen(false);
   };
 
+  // Use dynamic products from DB (falls back gracefully while seeding)
+  const { products, categories } = productsCtx;
+
   const filtered = useMemo(() =>
     products.filter(p =>
       (category === "All Products" || p.category === category) &&
       p.name.toLowerCase().includes(search.toLowerCase())
-    ), [category, search]
+    ), [products, category, search]
   );
 
   /* ── Guards ── */
@@ -391,7 +451,7 @@ function AppContent() {
     </div>
   );
 
-  /* ── Cart content (shared between desktop sidebar + mobile drawer) ─────── */
+  /* ── Cart content ─────────────────────────────────────────────────────────── */
   const CartContent = () => (
     <>
       <div style={S.cartItems}>
@@ -413,7 +473,6 @@ function AppContent() {
                 </div>
                 <span style={S.ciPrice}>₱{computeItem(item)}</span>
               </div>
-              {/* ✅ FIX: Use item.coffee flag instead of hardcoded IDs */}
               {item.coffee && (
                 <button onClick={() => toggleExtraShot(idx)} style={{
                   marginTop:6, width:"100%", padding:"4px",
@@ -433,14 +492,39 @@ function AppContent() {
           <span>Subtotal:</span>
           <span>₱{subtotal}</span>
         </div>
-        <div style={S.calcRow}>
-          <span>Delivery:</span>
-          <input type="number" placeholder="0" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} style={{ width:80, padding:"4px", border:"1px solid #DDD0C0", borderRadius:4 }} />
+
+        {/* Numpad-powered inputs */}
+        <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+          {/* Delivery fee */}
+          <div style={{ flex:1 }}>
+            <div
+              onClick={() => setNumpadTarget("delivery")}
+              style={{
+                padding:"6px 8px", border:`1px solid ${numpadTarget === "delivery" ? "#C0622A" : "#DDD0C0"}`,
+                borderRadius:6, background: numpadTarget === "delivery" ? "#FFF8F4" : "#FAF6EF",
+                cursor:"pointer", fontSize:12, color:"#8A6040",
+              }}
+            >
+              <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>Delivery</div>
+              <span style={{ fontSize:14, fontWeight:700, color:"#3B1F0E" }}>₱{deliveryFee || "0"}</span>
+            </div>
+          </div>
+          {/* Discount */}
+          <div style={{ flex:1 }}>
+            <div
+              onClick={() => setNumpadTarget("discount")}
+              style={{
+                padding:"6px 8px", border:`1px solid ${numpadTarget === "discount" ? "#C0622A" : "#DDD0C0"}`,
+                borderRadius:6, background: numpadTarget === "discount" ? "#FFF8F4" : "#FAF6EF",
+                cursor:"pointer", fontSize:12, color:"#8A6040",
+              }}
+            >
+              <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>Discount</div>
+              <span style={{ fontSize:14, fontWeight:700, color:"#3B1F0E" }}>₱{discount || "0"}</span>
+            </div>
+          </div>
         </div>
-        <div style={S.calcRow}>
-          <span>Discount:</span>
-          <input type="number" placeholder="0" value={discount} onChange={e => setDiscount(e.target.value)} style={{ width:80, padding:"4px", border:"1px solid #DDD0C0", borderRadius:4 }} />
-        </div>
+
         <div style={S.calcTotal}>
           <span>TOTAL</span>
           <span>₱{total}</span>
@@ -448,21 +532,34 @@ function AppContent() {
 
         {paymentMethod === "cash" && (
           <>
-            <div style={S.footerInputs}>
-              <div style={{ flex:1 }}>
-                <label style={S.loginLabel}>Cash</label>
-                <input type="number" placeholder="0" value={cash} onChange={e => setCash(e.target.value)} style={S.loginInput} />
+            {/* Cash display box */}
+            <div
+              onClick={() => setNumpadTarget("cash")}
+              style={{
+                padding:"8px 10px", marginBottom:6,
+                border:`2px solid ${numpadTarget === "cash" ? "#C0622A" : "#DDD0C0"}`,
+                borderRadius:8, background: numpadTarget === "cash" ? "#FFF8F4" : "#FAF6EF",
+                cursor:"pointer",
+              }}
+            >
+              <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>💵 Cash Tendered</div>
+              <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:22, color:"#3B1F0E" }}>
+                ₱{cash || "0"}
               </div>
             </div>
-            {change > 0 && <div style={S.changeRow}><span>Change</span><span>₱{change}</span></div>}
+
+            {/* Numpad — only shown when cash is payment method */}
+            <Numpad value={numpadValue} onChange={handleNumpad} />
+
+            {change > 0 && <div style={S.changeRow}><span>Change</span><span>₱{change.toFixed(2)}</span></div>}
           </>
         )}
 
-        <PaymentSelector value={paymentMethod} onChange={setPaymentMethod} />
+        <PaymentSelector value={paymentMethod} onChange={m => { setPaymentMethod(m); if (m !== "cash") setNumpadTarget("delivery"); else setNumpadTarget("cash"); }} />
 
         <div style={{ display:"flex", gap:6 }}>
           <PrimaryBtn onClick={() => setCart([])} disabled={!cart.length}>CLEAR</PrimaryBtn>
-          <PrimaryBtn onClick={checkout} disabled={!cart.length}>CHECKOUT</PrimaryBtn>
+          <PrimaryBtn onClick={checkout} disabled={!cart.length || (paymentMethod === "cash" && (!cash || Number(cash) < total))}>CHECKOUT</PrimaryBtn>
         </div>
       </div>
     </>
@@ -470,7 +567,7 @@ function AppContent() {
 
   return (
     <div style={S.root}>
-      {/* Sidebar — hidden on mobile */}
+      {/* Sidebar */}
       {!isMobile && (
         <div style={S.sidebar}>
           <div style={S.sidebarLogo}>
@@ -500,13 +597,11 @@ function AppContent() {
 
       {/* Main content */}
       <div style={S.productArea}>
-        {/* Sync banner — ✅ FIX: pass sync prop */}
         <SyncBanner sync={sync} />
 
-        {/* Cashier view — ✅ FIX: flexDirection row so cart stays on the side */}
         {view === "cashier" && (
           <div style={{ ...S.productArea, flexDirection:"row" }}>
-            {/* Left: product grid */}
+            {/* Product grid */}
             <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
               {isMobile && (
                 <div style={{ padding:"10px", background:"#FAF6EF", borderBottom:"1px solid #E8DDD0", display:"flex", gap:6, overflowX:"auto" }}>
@@ -558,7 +653,7 @@ function AppContent() {
               </div>
             </div>
 
-            {/* Right: desktop cart panel */}
+            {/* Desktop cart */}
             {!isMobile && (
               <div style={S.cartPanel}>
                 <div style={S.cartHeader}>
@@ -571,7 +666,6 @@ function AppContent() {
           </div>
         )}
 
-        {/* Kitchen view */}
         {view === "kitchen" && (
           <div style={S.kitchenArea}>
             <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:24, color:"#3B1F0E", marginBottom:16 }}>
@@ -615,10 +709,8 @@ function AppContent() {
           </div>
         )}
 
-        {/* Admin view */}
         {view === "admin" && <AdminShell />}
-
-      </div>{/* end main content */}
+      </div>
 
       {/* Mobile bottom nav */}
       {isMobile && <BottomTabBar view={view} setView={setView} activeCount={ordersCtx.activeOrders.length} />}
@@ -643,12 +735,10 @@ function AppContent() {
           <CartContent />
         </CartDrawer>
       )}
-
     </div>
   );
 }
 
-// ✅ Wrap entire app in ErrorBoundary to catch errors gracefully
 export default function App() {
   return (
     <ErrorBoundary>
