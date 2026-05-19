@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { auth } from "./firebase";
+// ✅ FIX: Import ErrorBoundary for error handling
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
 
@@ -230,7 +232,7 @@ function PaymentSelector({ value, onChange }: { value: PaymentMethod; onChange: 
 }
 
 /* ─── Main App ───────────────────────────────────────────────────────────── */
-export default function App() {
+function AppContent() {
   const [user, authLoading] = useAuthState(auth);
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -398,178 +400,154 @@ export default function App() {
             <span style={{ fontSize:36 }}>☕</span>
             <p style={{ fontSize:12, fontWeight:500 }}>No items yet</p>
           </div>
-        ) : cart.map((item, idx) => (
-          <div key={idx} style={S.cartItem}>
-            <div style={S.ciName}>{item.name}</div>
-            <div style={S.ciSize}>{item.sizeType}</div>
-            <div style={S.ciRow}>
-              <div style={S.qtyCtrl}>
-                <QtyBtn onClick={() => updateQty(idx, -1)}>−</QtyBtn>
-                <span style={S.qtyNum}>{item.qty}</span>
-                <QtyBtn onClick={() => updateQty(idx, 1)}>+</QtyBtn>
+        ) : (
+          cart.map((item, idx) => (
+            <div key={idx} style={S.cartItem}>
+              <div style={S.ciName}>{item.name}</div>
+              <div style={S.ciSize}>{item.sizeType}</div>
+              <div style={S.ciRow}>
+                <div style={S.qtyCtrl}>
+                  <QtyBtn onClick={() => updateQty(idx, -1)}>−</QtyBtn>
+                  <span style={S.qtyNum}>{item.qty}</span>
+                  <QtyBtn onClick={() => updateQty(idx, 1)}>+</QtyBtn>
+                </div>
+                <span style={S.ciPrice}>₱{computeItem(item)}</span>
               </div>
-              <span style={S.ciPrice}>₱{computeItem(item)}</span>
-            </div>
-            {item.coffee && (
-              item.addons?.includes("Extra Shot") ? (
-                <span onClick={() => toggleExtraShot(idx)} style={{ display:"inline-block", marginTop:4, background:"#FFF0E8", border:"1px solid #C0622A40", color:"#C0622A", fontSize:10, fontWeight:600, padding:"2px 6px", borderRadius:4, cursor:"pointer" }}>
-                  + Extra Shot ₱{10 * item.qty} ✕
-                </span>
-              ) : (
+              {item.id === "cappuccino" || item.id === "latte" || item.id === "americano" ? (
                 <button onClick={() => toggleExtraShot(idx)} style={{
-                  fontSize:10, fontWeight:600, color:"#8A6040", background:"none",
-                  border:"1px dashed #C8A98A", borderRadius:4, padding:"2px 6px",
-                  cursor:"pointer", marginTop:4, fontFamily:"'Barlow', sans-serif",
-                }}>+ Extra Shot</button>
-              )
-            )}
-          </div>
-        ))}
+                  marginTop:6, width:"100%", padding:"4px", background: item.addons?.includes("Extra Shot") ? "#C0622A" : "transparent",
+                  border:"1px solid #C0622A", borderRadius:4, fontSize:10, color: item.addons?.includes("Extra Shot") ? "#fff" : "#C0622A",
+                  fontWeight:600, cursor:"pointer",
+                }}>⭐ Extra Shot +₱10</button>
+              ) : null}
+            </div>
+          ))
+        )}
       </div>
 
       <div style={S.cartFooter}>
-        <div style={S.calcRow}><span>Subtotal</span><span>₱{subtotal}</span></div>
+        <div style={S.calcRow}>
+          <span>Subtotal:</span>
+          <span>₱{subtotal}</span>
+        </div>
+        <div style={S.calcRow}>
+          <span>Delivery:</span>
+          <input type="number" placeholder="0" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} style={{ width:80, padding:"4px", border:"1px solid #DDD0C0", borderRadius:4 }} />
+        </div>
+        <div style={S.calcRow}>
+          <span>Discount:</span>
+          <input type="number" placeholder="0" value={discount} onChange={e => setDiscount(e.target.value)} style={{ width:80, padding:"4px", border:"1px solid #DDD0C0", borderRadius:4 }} />
+        </div>
+        <div style={S.calcTotal}>
+          <span>TOTAL</span>
+          <span>₱{total}</span>
+        </div>
 
-        {orderType === "delivery" && (
-          <div style={{ marginBottom:6 }}>
-            <input
-              style={{ width:"100%", padding:"6px 8px", border:"1px solid #DDD0C0", borderRadius:6, fontFamily:"'Barlow', sans-serif", fontSize:12, color:"#3B1F0E", background:"#FAF6EF", outline:"none", boxSizing:"border-box" }}
-              placeholder="Delivery fee ₱" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)}
-            />
-          </div>
+        {paymentMethod === "cash" && (
+          <>
+            <div style={S.footerInputs}>
+              <div style={{ flex:1 }}>
+                <label style={S.loginLabel}>Cash</label>
+                <input type="number" placeholder="0" value={cash} onChange={e => setCash(e.target.value)} style={S.loginInput} />
+              </div>
+            </div>
+            {change > 0 && <div style={S.changeRow}><span>Change</span><span>₱{change}</span></div>}
+          </>
         )}
-        {deliveryFee && <div style={S.calcRow}><span>Delivery</span><span>+₱{deliveryFee}</span></div>}
-        {discount    && <div style={S.calcRow}><span>Discount</span><span>-₱{discount}</span></div>}
-
-        <div style={S.calcTotal}><span>TOTAL</span><span>₱{total}</span></div>
 
         <PaymentSelector value={paymentMethod} onChange={setPaymentMethod} />
 
-        <div style={S.footerInputs}>
-          <input
-            style={{ flex:1, padding:"7px 8px", border:"1px solid #DDD0C0", borderRadius:6, fontFamily:"'Barlow', sans-serif", fontSize:12, color:"#3B1F0E", background:"#FAF6EF", outline:"none" }}
-            placeholder="Discount ₱" value={discount} onChange={e => setDiscount(e.target.value)}
-          />
-          {paymentMethod === "cash" && (
-            <input
-              style={{ flex:1, padding:"7px 8px", border:"1px solid #DDD0C0", borderRadius:6, fontFamily:"'Barlow', sans-serif", fontSize:12, color:"#3B1F0E", background:"#FAF6EF", outline:"none" }}
-              placeholder="Cash ₱" value={cash} onChange={e => setCash(e.target.value)}
-            />
-          )}
+        <div style={{ display:"flex", gap:6 }}>
+          <PrimaryBtn onClick={() => setCart([])} disabled={!cart.length}>CLEAR</PrimaryBtn>
+          <PrimaryBtn onClick={checkout} disabled={!cart.length}>CHECKOUT</PrimaryBtn>
         </div>
-
-        {paymentMethod === "cash" && cash && Number(cash) >= total && (
-          <div style={S.changeRow}><span>Change</span><span>₱{change.toFixed(2)}</span></div>
-        )}
-        {paymentMethod === "cash" && cash && Number(cash) < total && (
-          <div style={{ ...S.changeRow, background:"#FDECEA", color:"#C0622A" }}><span>Short by</span><span>₱{(total - Number(cash)).toFixed(2)}</span></div>
-        )}
-
-        <PrimaryBtn
-          onClick={checkout}
-          disabled={
-            !cart.length ||
-            (paymentMethod === "cash" && !!cash && Number(cash) < total)
-          }
-        >
-          {paymentMethod === "cash" ? "CHECKOUT →" : `PAY VIA ${paymentMethod.toUpperCase()} →`}
-        </PrimaryBtn>
       </div>
     </>
   );
 
-  /* ─── Main render ──────────────────────────────────────────────────────── */
   return (
-    // ── height:"100dvh" handles mobile browser chrome collapsing ────────────
-    <div style={{ ...S.root, flexDirection:"column", paddingBottom: isMobile ? 60 : 0 }}>
+    <div style={S.root}>
+      {/* Sidebar */}
+      <div style={S.sidebar}>
+        <div style={S.sidebarLogo}>
+          <div style={S.brand}>CD'T</div>
+          <div style={S.tagline}>POS</div>
+        </div>
 
-      {/* ── NEW: Sync banner — sticky at the very top, always visible ──────── */}
-      <SyncBanner sync={sync} />
+        <div style={S.navSection}>
+          <NavBtn active={view === "cashier"} onClick={() => setView("cashier")} icon="🧾">Cashier</NavBtn>
+          <NavBtn active={view === "kitchen"} onClick={() => setView("kitchen")} icon="🍵">Kitchen</NavBtn>
+          <NavBtn active={view === "admin"} onClick={() => setView("admin")} icon="📊">Admin</NavBtn>
+        </div>
 
-      {/* ── Main content row (sidebar + active view + cart) ─────────────── */}
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <div style={S.catSection}>
+          <span style={S.catLabel}>Categories</span>
+          {categories.map(c => (
+            <CatBtn key={c} active={category === c} onClick={() => setCategory(c)}>{c}</CatBtn>
+          ))}
+        </div>
 
-        {/* Sidebar (desktop only) */}
-        {!isMobile && (
-          <div style={S.sidebar}>
-            <div style={S.sidebarLogo}>
-              <div style={S.brand}>COFFEE<br />D'TITOS'</div>
-              <div style={S.tagline}>Ang Hilig Mo Sa Kape</div>
-            </div>
-            <div style={S.navSection}>
-              <NavBtn active={view === "cashier"} onClick={() => setView("cashier")} icon="🧾">Cashier</NavBtn>
-              <NavBtn active={view === "kitchen"} onClick={() => setView("kitchen")} icon="🍵">
-                Kitchen {ordersCtx.activeOrders.length > 0 && (
-                  <span style={{ marginLeft:"auto", background:"#C0622A", color:"#fff", borderRadius:10, fontSize:10, fontWeight:700, padding:"1px 6px" }}>{ordersCtx.activeOrders.length}</span>
-                )}
-              </NavBtn>
-              <NavBtn active={view === "admin"} onClick={() => setView("admin")} icon="📊">Admin</NavBtn>
-              <NavBtn onClick={logout} icon="🚪">Logout</NavBtn>
-            </div>
-            {view === "cashier" && (
-              <div style={S.catSection}>
-                <span style={S.catLabel}>Menu</span>
-                {categories.map(c => <CatBtn key={c} active={category === c} onClick={() => setCategory(c)}>{c}</CatBtn>)}
-              </div>
-            )}
-            <div style={S.sidebarFooter}>
-              <div style={S.deviceBadge}><span style={{ fontSize:14, color:"#C0622A" }}>🖥</span>{deviceId}</div>
-            </div>
-          </div>
-        )}
+        <div style={S.sidebarFooter}>
+          <div style={S.deviceBadge}>📍 {deviceId}</div>
+          <button onClick={logout} style={{ marginTop:8, width:"100%", padding:"6px", background:"transparent", border:"1px solid #C0622A", borderRadius:6, color:"#C0622A", fontFamily:"'Barlow', sans-serif", fontSize:11, fontWeight:600, cursor:"pointer" }}>LOGOUT</button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={S.productArea}>
+        {/* Sync banner */}
+        <SyncBanner />
 
         {/* Cashier view */}
         {view === "cashier" && (
-          <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-            <div style={S.productArea}>
-              {isMobile && (
-                <div style={{ overflowX:"auto", display:"flex", gap:6, padding:"8px 10px", background:"#3B1F0E", borderBottom:"1px solid #5a3020" }}>
-                  {categories.map(c => (
-                    <button key={c} onClick={() => setCategory(c)} style={{
-                      padding:"5px 12px", borderRadius:16, whiteSpace:"nowrap",
-                      background: category === c ? "#C0622A" : "transparent",
-                      border: category === c ? "none" : "1px solid #5a3020",
-                      color: category === c ? "#fff" : "#C8A98A",
-                      fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Barlow', sans-serif",
-                    }}>{c}</button>
-                  ))}
-                </div>
-              )}
-
-              <div style={S.topbar}>
-                <div style={S.searchWrap}>
-                  <span style={{ fontSize:15, color:"#A0856A" }}>🔍</span>
-                  <input style={S.searchInput} placeholder="Search drinks…" value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
-                <div style={S.otWrap}>
-                  {(["dine-in","pickup","delivery"] as OrderType[]).map(t => (
-                    <OtBtn key={t} active={orderType === t} onClick={() => setOrderType(t)}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </OtBtn>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{
-                flex:1, overflowY:"auto", padding:10,
-                display:"grid", gap:8, alignContent:"start",
-                gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(148px, 1fr))",
-              }}>
-                {filtered.map(p => (
-                  <div key={p.id} style={{ background:"#fff", border:"1px solid #E8DDD0", borderRadius:10, padding:10 }}>
-                    <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:700, fontSize:13, color:"#3B1F0E", lineHeight:1.2, marginBottom:8 }}>{p.name}</div>
-                    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                      {p.singleSize ? (
-                        <SizeBtn label={p.size!.label} price={p.size!.price} onClick={() => { addToCart(p, p.size!.label, p.size!.price); if (isMobile) setCartOpen(true); }} />
-                      ) : (
-                        p.sizes!.map(s => (
-                          <SizeBtn key={s.label} label={s.label} price={s.price} onClick={() => { addToCart(p, s.label, s.price); if (isMobile) setCartOpen(true); }} />
-                        ))
-                      )}
-                    </div>
-                  </div>
+          <div style={S.productArea}>
+            {isMobile && (
+              <div style={{ padding:"10px", background:"#FAF6EF", borderBottom:"1px solid #E8DDD0", display:"flex", gap:6, overflowX:"auto" }}>
+                {categories.map(c => (
+                  <button key={c} onClick={() => setCategory(c)} style={{
+                    padding:"5px 12px", borderRadius:16, whiteSpace:"nowrap",
+                    background: category === c ? "#C0622A" : "transparent",
+                    border: category === c ? "none" : "1px solid #5a3020",
+                    color: category === c ? "#fff" : "#C8A98A",
+                    fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Barlow', sans-serif",
+                  }}>{c}</button>
                 ))}
               </div>
+            )}
+
+            <div style={S.topbar}>
+              <div style={S.searchWrap}>
+                <span style={{ fontSize:15, color:"#A0856A" }}>🔍</span>
+                <input style={S.searchInput} placeholder="Search drinks…" value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+              <div style={S.otWrap}>
+                {(["dine-in","pickup","delivery"] as OrderType[]).map(t => (
+                  <OtBtn key={t} active={orderType === t} onClick={() => setOrderType(t)}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </OtBtn>
+                ))}
+              </div>
+            </div>
+
+            <div style={{
+              flex:1, overflowY:"auto", padding:10,
+              display:"grid", gap:8, alignContent:"start",
+              gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(148px, 1fr))",
+            }}>
+              {filtered.map(p => (
+                <div key={p.id} style={{ background:"#fff", border:"1px solid #E8DDD0", borderRadius:10, padding:10 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:700, fontSize:13, color:"#3B1F0E", lineHeight:1.2, marginBottom:8 }}>{p.name}</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                    {p.singleSize ? (
+                      <SizeBtn label={p.size!.label} price={p.size!.price} onClick={() => { addToCart(p, p.size!.label, p.size!.price); if (isMobile) setCartOpen(true); }} />
+                    ) : (
+                      p.sizes!.map(s => (
+                        <SizeBtn key={s.label} label={s.label} price={s.price} onClick={() => { addToCart(p, s.label, s.price); if (isMobile) setCartOpen(true); }} />
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Desktop cart */}
@@ -659,5 +637,14 @@ export default function App() {
       )}
 
     </div>
+  );
+}
+
+// ✅ FIX: Wrap entire app in ErrorBoundary to catch errors gracefully
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
   );
 }
