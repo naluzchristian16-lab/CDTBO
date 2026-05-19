@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
-import {
-  collection, addDoc, updateDoc, deleteDoc,
-  doc, onSnapshot, query, orderBy,
-} from "firebase/firestore";
-import { db } from "../firebase";
-import { Expense } from "../types";
+import { useLiveQuery }    from "dexie-react-hooks";
+import { localDb }         from "../db/localDb";
+import { syncWrite }       from "../db/syncEngine";
+import { useOnlineStatus } from "./useOnlineStatus";
+import { Expense }         from "../types";
+import { v4 as uuidv4 }    from "uuid";
 
 export const EXPENSE_CATEGORIES = [
   "Fuel",
@@ -16,30 +15,33 @@ export const EXPENSE_CATEGORIES = [
 ] as const;
 
 export function useExpenses() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    const q = query(collection(db, "expenses"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, snap => {
-      setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Expense)));
-      setLoading(false);
-    });
-    return unsub;
-  }, []);
+  // ── Live query from IndexedDB — works offline ─────────────────────────────
+  const expenses: Expense[] = useLiveQuery(
+    () => localDb.expenses.orderBy("createdAt").reverse().toArray(), [], []
+  ) ?? [];
 
-  const addExpense = (data: Omit<Expense, "id" | "createdAt">) =>
-    addDoc(collection(db, "expenses"), { ...data, createdAt: Date.now() });
+  const loading = expenses.length === 0;
 
-  const updateExpense = (id: string, data: Partial<Expense>) =>
-    updateDoc(doc(db, "expenses", id), data);
+  // ── Write ops ─────────────────────────────────────────────────────────────
 
-  const deleteExpense = (id: string) =>
-    deleteDoc(doc(db, "expenses", id));
+  const addExpense = async (data: Omit<Expense, "id" | "createdAt">) => {
+    const id      = uuidv4();
+    const expense: Expense = { id, ...data, createdAt: Date.now() };
+    await syncWrite({ col: "expenses", docId: id, op: "set", payload: expense, isOnline });
+    return id;
+  };
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
+  const updateExpense = async (id: string, data: Partial<Expense>) =>
+    syncWrite({ col: "expenses", docId: id, op: "update", payload: data, isOnline });
 
-  const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const deleteExpense = async (id: string) =>
+    syncWrite({ col: "expenses", docId: id, op: "delete", isOnline });
+
+  // ── Derived ───────────────────────────────────────────────────────────────
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   const todayExpenses = expenses.filter(e => e.date === todayStr);
 
