@@ -8,53 +8,50 @@ interface Props {
   expenses:    Expense[];
 }
 
-// ─── Utility ──────────────────────────────────────────────────────────────────
+// ─── Date helpers (ALL use local time, never UTC) ─────────────────────────────
+//
+// Root cause of the ₱0 dashboard bug:
+//   new Date().toISOString() returns UTC.
+//   In PH (UTC+8) that's 8 hours BEHIND local time, so the date string is
+//   often yesterday. Every filter that compared UTC "today" against locally-
+//   timestamped order dates returned 0 rows → ₱0 revenue.
+//
+// Fix: every date string in this file is built with local clock, not UTC.
 
-// Use local time instead of UTC so orders placed in PH timezone
-// (UTC+8) are counted on the correct calendar date in the dashboard.
-// toISOString() returns a UTC date, which is always 8 hours behind
-// local time — causing all dashboard metrics to show 0 for "today".
-function dateStr(ts: number) {
-  const d = new Date(ts);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+/** Format a Date object as "YYYY-MM-DD" in LOCAL time. */
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// FIX: localToday() returns today's date in LOCAL time (not UTC).
-// Previously `today` used new Date().toISOString().slice(0,10) which
-// returns a UTC date. In UTC+8 this is 8 hours behind, so any order
-// placed before 08:00 UTC (= 16:00 PH time the previous day) was
-// labelled as "yesterday" — making cupsToday, top5Today and the
-// "Today" KPI cards all show 0.
+/** Convert a timestamp (ms) to "YYYY-MM-DD" in LOCAL time. */
+function dateStr(ts: number): string {
+  return localDateStr(new Date(ts));
+}
+
+/** Today's date as "YYYY-MM-DD" in LOCAL time. */
 function localToday(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return localDateStr(new Date());
 }
 
+/** Build an array of date strings from `from` to `to` (inclusive), LOCAL time. */
 function rangeArr(from: string, to: string): string[] {
   const dates: string[] = [];
-  const cur = new Date(from + "T00:00");
-  const end = new Date(to   + "T00:00");
+  // Parse as local midnight to avoid DST/UTC surprises
+  const cur = new Date(from + "T00:00:00");
+  const end = new Date(to   + "T00:00:00");
   while (cur <= end) {
-    dates.push(cur.toISOString().slice(0, 10));
+    dates.push(localDateStr(cur));
     cur.setDate(cur.getDate() + 1);
   }
   return dates;
 }
 
+/** Return { from, to } for the last N calendar days in LOCAL time. */
 function lastNDays(days: number): { from: string; to: string } {
-  const to  = new Date();
+  const to   = new Date();
   const from = new Date();
   from.setDate(from.getDate() - (days - 1));
-  return {
-    from: `${from.getFullYear()}-${String(from.getMonth()+1).padStart(2,"0")}-${String(from.getDate()).padStart(2,"0")}`,
-    to:   `${to.getFullYear()}-${String(to.getMonth()+1).padStart(2,"0")}-${String(to.getDate()).padStart(2,"0")}`,
-  };
+  return { from: localDateStr(from), to: localDateStr(to) };
 }
 
 function itemCogs(
@@ -62,8 +59,8 @@ function itemCogs(
   recipes: Recipe[],
   ingredients: Ingredient[]
 ): number {
-  const sizeKey  = item.sizeType ? `${item.id}__${item.sizeType}` : null;
-  const recipe   =
+  const sizeKey = item.sizeType ? `${item.id}__${item.sizeType}` : null;
+  const recipe  =
     (sizeKey && recipes.find(r => r.productId === sizeKey)) ??
     recipes.find(r => r.productId === item.id) ??
     null;
@@ -79,31 +76,23 @@ function itemCogs(
 
 export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) {
 
-  // FIX: Count pending + completed orders for dashboard revenue.
-  // Orders are created as "pending" and only move to "completed" when Kitchen
-  // marks them done. Voided orders are excluded from all metrics.
+  // Count pending + completed orders; exclude voided.
   const billedOrders = useMemo(
     () => orders.filter(o => o.status === "pending" || o.status === "completed"),
     [orders]
   );
 
-  const completedOrders = useMemo(
-    () => orders.filter(o => o.status === "completed"),
-    [orders]
-  );
+  // ── Today / week anchors (LOCAL time) ────────────────────────────────────
 
-  // ── Cups sold ────────────────────────────────────────────────────────────────
-
-  // FIX: Use localToday() so the date matches dateStr(o.createdAt) which also
-  // uses local time. The old code used toISOString() here (UTC) while dateStr
-  // used local time — the mismatch caused "today" filters to always return 0.
   const today = localToday();
 
-  const weekStart = (() => {
+  const weekStart = localDateStr((() => {
     const d = new Date();
     d.setDate(d.getDate() - 6);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-  })();
+    return d;
+  })());
+
+  // ── Cups sold ────────────────────────────────────────────────────────────
 
   const cupsForDate = useMemo(() => (date: string) =>
     billedOrders
@@ -126,19 +115,19 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
     [billedOrders]
   );
 
-  // ── Drink stats builder ───────────────────────────────────────────────────────
+  // ── Drink stats builder ──────────────────────────────────────────────────
 
   const buildDrinkStats = useMemo(() => (subset: Order[]): DrinkStat[] => {
     const map = new Map<string, DrinkStat>();
 
     for (const order of subset) {
       for (const item of order.items) {
-        const key = item.sizeType ? `${item.id}__${item.sizeType}` : item.id;
+        const key      = item.sizeType ? `${item.id}__${item.sizeType}` : item.id;
         const existing = map.get(key);
-        const cogs    = itemCogs(item, recipes, ingredients);
-        const revenue = item.price * item.qty;
-        const margin  = revenue > 0 ? ((revenue - cogs) / revenue) * 100 : 0;
-        const label   = item.sizeType ? `${item.name} (${item.sizeType})` : item.name;
+        const cogs     = itemCogs(item, recipes, ingredients);
+        const revenue  = item.price * item.qty;
+        const margin   = revenue > 0 ? ((revenue - cogs) / revenue) * 100 : 0;
+        const label    = item.sizeType ? `${item.name} (${item.sizeType})` : item.name;
 
         if (existing) {
           const prevQty = existing.qtySold;
@@ -147,13 +136,7 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
           existing.avgMargin =
             (existing.avgMargin * prevQty + margin * item.qty) / existing.qtySold;
         } else {
-          map.set(key, {
-            productId: key,
-            name:      label,
-            qtySold:   item.qty,
-            revenue,
-            avgMargin: margin,
-          });
+          map.set(key, { productId: key, name: label, qtySold: item.qty, revenue, avgMargin: margin });
         }
       }
     }
@@ -161,7 +144,7 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
     return Array.from(map.values()).sort((a, b) => b.qtySold - a.qtySold);
   }, [recipes, ingredients]);
 
-  // ── Top 5 ─────────────────────────────────────────────────────────────────────
+  // ── Top 5 ────────────────────────────────────────────────────────────────
 
   const top5Today = useMemo(() => {
     const todayOrders = billedOrders.filter(o => dateStr(o.createdAt) === today);
@@ -181,33 +164,33 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
     [billedOrders, buildDrinkStats]
   );
 
-  // ── Daily stats for an explicit date range ───────────────────────────────────
+  // ── Daily stats builder ──────────────────────────────────────────────────
 
   const buildStatsForRange = useMemo(() => (from: string, to: string): DailyStat[] => {
     return rangeArr(from, to).map(date => {
-      const dayOrders = billedOrders.filter(o => dateStr(o.createdAt) === date);
-      const revenue   = dayOrders.reduce((s, o) => s + o.total, 0);
-      const cogs      = dayOrders.reduce((s, o) =>
+      const dayOrders   = billedOrders.filter(o => dateStr(o.createdAt) === date);
+      const revenue     = dayOrders.reduce((s, o) => s + o.total, 0);
+      const cogs        = dayOrders.reduce((s, o) =>
         s + o.items.reduce((a, item) => a + itemCogs(item, recipes, ingredients), 0), 0);
       const dayExpenses = expenses
         .filter(e => e.date === date)
         .reduce((s, e) => s + e.amount, 0);
-      const cupsCount = dayOrders.reduce((s, o) =>
+      const cupsCount   = dayOrders.reduce((s, o) =>
         s + o.items.reduce((a, i) => a + i.qty, 0), 0);
 
       return {
         date,
         revenue,
         cogs,
-        expenses: dayExpenses,
-        netProfit: revenue - cogs - dayExpenses,
+        expenses:   dayExpenses,
+        netProfit:  revenue - cogs - dayExpenses,
         orderCount: dayOrders.length,
         cupsCount,
       };
     });
   }, [billedOrders, recipes, ingredients, expenses]);
 
-  const last7Days  = useMemo(() => {
+  const last7Days = useMemo(() => {
     const { from, to } = lastNDays(7);
     return buildStatsForRange(from, to);
   }, [buildStatsForRange]);
@@ -217,7 +200,7 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
     return buildStatsForRange(from, to);
   }, [buildStatsForRange]);
 
-  // ── Payment breakdown ────────────────────────────────────────────────────────
+  // ── Payment breakdown ────────────────────────────────────────────────────
 
   const paymentBreakdown = useMemo(() => (dateFrom: string, dateTo: string) => {
     const subset = billedOrders.filter(o => {
