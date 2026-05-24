@@ -3,6 +3,7 @@ import { useOrders }          from "../../hooks/useOrders";
 import { useIngredients }     from "../../hooks/useIngredients";
 import { useExpenses }        from "../../hooks/useExpenses";
 import { useSuppliers }       from "../../hooks/useSuppliers";
+import { useProducts }        from "../../hooks/useProducts";
 import { useRestock }         from "../../hooks/useRestock";
 import { useReconciliation }  from "../../hooks/useReconciliation";
 import { useAnalytics }       from "../../hooks/useAnalytics";
@@ -34,6 +35,7 @@ export default function AdminShell() {
   const ingredientsCtx    = useIngredients();
   const expensesCtx       = useExpenses();
   const suppliersCtx      = useSuppliers();
+  const productsCtx       = useProducts();
   const restockCtx        = useRestock(ingredientsCtx.ingredients);
   const reconciliationCtx = useReconciliation(ordersCtx.completedOrders);
 
@@ -94,7 +96,7 @@ export default function AdminShell() {
             )}
             {tab === "products"       && <ProductManager />}
             {tab === "inventory"      && <Inventory   ingredients={ingredientsCtx} />}
-            {tab === "recipes"        && <Recipes     ingredients={ingredientsCtx} />}
+            {tab === "recipes"        && <Recipes     ingredients={ingredientsCtx} products={productsCtx.products} />}
             {tab === "expenses"       && <Expenses    expenses={expensesCtx} />}
             {tab === "restock"        && (
               <RestockLog
