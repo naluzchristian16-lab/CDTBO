@@ -16,13 +16,20 @@
  *  4. REAL-TIME     — onSnapshot listeners keep IndexedDB in sync
  *                     while online (writes from other devices land here).
  * ──────────────────────────────────────────────────────────────────
+ *
+ * FIX: Replaced updateDoc() with setDoc(..., { merge: true }) everywhere.
+ * updateDoc() throws "NOT_FOUND" when the Firestore document doesn't exist yet
+ * (e.g. products/categories that were seeded locally from static data but
+ * never pushed to Firestore). setDoc + merge:true is safe in both cases:
+ *   - document exists   → merges fields (same behaviour as updateDoc)
+ *   - document missing  → creates it   (same behaviour as setDoc)
+ * This stops the "1 change pending sync" that never flushes.
  */
 
 import {
   collection,
   doc,
   setDoc,
-  updateDoc,
   deleteDoc,
   getDocs,
   onSnapshot,
@@ -157,6 +164,7 @@ export async function syncWrite({
 }: WriteArgs) {
   const table = getTable(col);
 
+  // Always write locally first
   if (op === "set" || op === "update") {
     await (table as Dexie.Table).put({ id: docId, ...payload });
   } else if (op === "delete") {
@@ -167,10 +175,17 @@ export async function syncWrite({
     try {
       const ref = doc(firestore, col, docId);
 
-      if (op === "set") await setDoc(ref, payload!);
-      if (op === "update")
-        await updateDoc(ref, payload as Record<string, unknown>);
-      if (op === "delete") await deleteDoc(ref);
+      if (op === "set") {
+        await setDoc(ref, payload!);
+      } else if (op === "update") {
+        // FIX: setDoc with merge:true instead of updateDoc().
+        // updateDoc() throws NOT_FOUND if the doc doesn't exist in Firestore
+        // (common for products/categories seeded locally from static data).
+        // setDoc + merge:true creates OR merges — safe either way.
+        await setDoc(ref, payload!, { merge: true });
+      } else if (op === "delete") {
+        await deleteDoc(ref);
+      }
     } catch (err) {
       console.warn("[syncEngine] Firebase write failed, queuing:", err);
 
@@ -206,10 +221,15 @@ export async function flushPendingWrites(): Promise<{
     try {
       const ref = doc(firestore, write.collection, write.docId);
 
-      if (write.op === "set") await setDoc(ref, write.payload!);
-      if (write.op === "update")
-        await updateDoc(ref, write.payload as Record<string, unknown>);
-      if (write.op === "delete") await deleteDoc(ref);
+      if (write.op === "set") {
+        await setDoc(ref, write.payload!);
+      } else if (write.op === "update") {
+        // FIX: same as above — use setDoc + merge:true when flushing queued
+        // updates so they don't fail on docs that never existed in Firestore.
+        await setDoc(ref, write.payload!, { merge: true });
+      } else if (write.op === "delete") {
+        await deleteDoc(ref);
+      }
 
       await removePendingWrite(write.id!);
       flushed++;
@@ -226,4 +246,3 @@ export async function flushPendingWrites(): Promise<{
 
   return { flushed, failed };
 }
-
