@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useIngredients } from "../../hooks/useIngredients";
-import { products }       from "../../data/products";
-import { RecipeIngredient } from "../../types";
+import { RecipeIngredient, Product } from "../../types";
 
 interface Props {
   ingredients: ReturnType<typeof useIngredients>;
+  products: Product[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ function recipeKey(productId: string, sizeLabel: string | null): string {
 }
 
 /** Get all selectable size labels for a product (null = single-size). */
-function getSizes(productId: string): string[] | null {
+function getSizes(productId: string, products: Product[]): string[] | null {
   const p = products.find(x => x.id === productId);
   if (!p) return null;
   if (p.singleSize || !p.sizes) return null;
@@ -24,14 +24,14 @@ function getSizes(productId: string): string[] | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function Recipes({ ingredients: ctx }: Props) {
+export default function Recipes({ ingredients: ctx, products }: Props) {
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [selectedSize, setSelectedSize]           = useState<string | null>(null);
   const [recipeRows, setRecipeRows]               = useState<RecipeIngredient[]>([]);
   const [saving, setSaving]                        = useState(false);
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
-  const sizes           = selectedProductId ? getSizes(selectedProductId) : null;
+  const sizes           = selectedProductId ? getSizes(selectedProductId, products) : null;
   const activeKey       = selectedProductId
     ? recipeKey(selectedProductId, selectedSize)
     : null;
@@ -40,7 +40,7 @@ export default function Recipes({ ingredients: ctx }: Props) {
 
   const loadProduct = (productId: string) => {
     setSelectedProductId(productId);
-    const productSizes = getSizes(productId);
+    const productSizes = getSizes(productId, products);
     // Auto-select first size (or null for single-size)
     const firstSize = productSizes ? productSizes[0] : null;
     setSelectedSize(firstSize);
