@@ -79,9 +79,17 @@ export default function Dashboard({ orders, expenses, ingredients, analytics, re
   const [period, setPeriod]       = useState<Period>("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo]     = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  // FIX: Use local time for today's date. toISOString() returns UTC which is
+  // 8 hours behind PH time — this caused trendData.filter(d => d.date === today)
+  // to never match, so Revenue/Profit/COGS all showed ₱0 even with real orders.
+  const localToday = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  })();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState(localToday);
+
+  const today = localToday;
 
   // ── Date range resolution ──────────────────────────────────────────────────
 
@@ -215,8 +223,9 @@ export default function Dashboard({ orders, expenses, ingredients, analytics, re
               to.setDate(to.getDate() - preset.offset);
               const from = new Date(to);
               from.setDate(from.getDate() - (preset.days - 1));
-              const toStr   = to.toISOString().slice(0, 10);
-              const fromStr = from.toISOString().slice(0, 10);
+              const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+              const toStr   = fmt(to);
+              const fromStr = fmt(from);
               return (
                 <button key={preset.label}
                   onClick={() => { setCustomFrom(fromStr); setCustomTo(toStr); }}
