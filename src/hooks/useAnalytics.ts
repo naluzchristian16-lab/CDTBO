@@ -10,12 +10,26 @@ interface Props {
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 
-// FIX #2: Use local time instead of UTC so orders placed in PH timezone
+// Use local time instead of UTC so orders placed in PH timezone
 // (UTC+8) are counted on the correct calendar date in the dashboard.
-// The old toISOString() returned a UTC date, which was always 8 hours behind
+// toISOString() returns a UTC date, which is always 8 hours behind
 // local time — causing all dashboard metrics to show 0 for "today".
 function dateStr(ts: number) {
   const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// FIX: localToday() returns today's date in LOCAL time (not UTC).
+// Previously `today` used new Date().toISOString().slice(0,10) which
+// returns a UTC date. In UTC+8 this is 8 hours behind, so any order
+// placed before 08:00 UTC (= 16:00 PH time the previous day) was
+// labelled as "yesterday" — making cupsToday, top5Today and the
+// "Today" KPI cards all show 0.
+function localToday(): string {
+  const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -38,8 +52,8 @@ function lastNDays(days: number): { from: string; to: string } {
   const from = new Date();
   from.setDate(from.getDate() - (days - 1));
   return {
-    from: from.toISOString().slice(0, 10),
-    to:   to.toISOString().slice(0, 10),
+    from: `${from.getFullYear()}-${String(from.getMonth()+1).padStart(2,"0")}-${String(from.getDate()).padStart(2,"0")}`,
+    to:   `${to.getFullYear()}-${String(to.getMonth()+1).padStart(2,"0")}-${String(to.getDate()).padStart(2,"0")}`,
   };
 }
 
@@ -80,12 +94,15 @@ export function useAnalytics({ orders, ingredients, recipes, expenses }: Props) 
 
   // ── Cups sold ────────────────────────────────────────────────────────────────
 
-  const today = new Date().toISOString().slice(0, 10);
+  // FIX: Use localToday() so the date matches dateStr(o.createdAt) which also
+  // uses local time. The old code used toISOString() here (UTC) while dateStr
+  // used local time — the mismatch caused "today" filters to always return 0.
+  const today = localToday();
 
   const weekStart = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 6);
-    return d.toISOString().slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   })();
 
   const cupsForDate = useMemo(() => (date: string) =>
