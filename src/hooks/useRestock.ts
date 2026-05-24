@@ -9,11 +9,18 @@ export function useRestock(ingredients: Ingredient[]) {
   const isOnline = useOnlineStatus();
 
   // ── Live query from IndexedDB — works offline ─────────────────────────────
-  const entries: RestockEntry[] = useLiveQuery(
-    () => localDb.restockLog.orderBy("createdAt").reverse().toArray(), [], []
-  ) ?? [];
+  // FIX: Track raw result so we can distinguish "Dexie still resolving"
+  // (undefined) from "resolved but empty" ([]). The old code used
+  // `entries.length === 0` which kept `loading = true` forever whenever
+  // there were no restock entries, blocking the entire Admin dashboard.
+  const rawEntries = useLiveQuery(
+    () => localDb.restockLog.orderBy("createdAt").reverse().toArray(), []
+  );
 
-  const loading = entries.length === 0;
+  const entries: RestockEntry[] = rawEntries ?? [];
+
+  // loading is true ONLY while Dexie hasn't resolved yet (undefined), not when empty
+  const loading = rawEntries === undefined;
 
   // ── logRestock ────────────────────────────────────────────────────────────
   // Two writes in one call:
