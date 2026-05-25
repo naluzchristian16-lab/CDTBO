@@ -310,6 +310,9 @@ function AppContent() {
   const [discount, setDiscount]           = useState("");
   const [cash, setCash]                   = useState("");
   const [cartOpen, setCartOpen]           = useState(false);
+  // Controls whether the checkout panel (numpad, payment, etc.) is visible.
+  // Cashier first sees items + "Proceed" button; numpad only appears after tapping Proceed.
+  const [showCheckout, setShowCheckout]   = useState(false);
   // Which field the numpad is targeting: "cash" | "delivery" | "discount"
   const [numpadTarget, setNumpadTarget]   = useState<"cash" | "delivery" | "discount">("cash");
   // FIX #1: Track whether cashier has manually tapped/edited the cash field
@@ -427,6 +430,7 @@ function AppContent() {
     setCashFocused(false);
     setDiscount("");
     setDeliveryFee("");
+    setShowCheckout(false);
     setCartOpen(false);
   };
 
@@ -516,101 +520,110 @@ function AppContent() {
           <span>₱{subtotal}</span>
         </div>
 
-        {/* Numpad-powered inputs */}
-        <div style={{ display:"flex", gap:6, marginBottom:6 }}>
-          {/* Delivery fee */}
-          <div style={{ flex:1 }}>
-            <div
-              onClick={() => setNumpadTarget("delivery")}
-              style={{
-                padding:"6px 8px", border:`1px solid ${numpadTarget === "delivery" ? "#C0622A" : "#DDD0C0"}`,
-                borderRadius:6, background: numpadTarget === "delivery" ? "#FFF8F4" : "#FAF6EF",
-                cursor:"pointer", fontSize:12, color:"#8A6040",
-              }}
-            >
-              <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>Delivery</div>
-              <span style={{ fontSize:14, fontWeight:700, color:"#3B1F0E" }}>₱{deliveryFee || "0"}</span>
-            </div>
-          </div>
-          {/* Discount */}
-          <div style={{ flex:1 }}>
-            <div
-              onClick={() => setNumpadTarget("discount")}
-              style={{
-                padding:"6px 8px", border:`1px solid ${numpadTarget === "discount" ? "#C0622A" : "#DDD0C0"}`,
-                borderRadius:6, background: numpadTarget === "discount" ? "#FFF8F4" : "#FAF6EF",
-                cursor:"pointer", fontSize:12, color:"#8A6040",
-              }}
-            >
-              <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>Discount</div>
-              <span style={{ fontSize:14, fontWeight:700, color:"#3B1F0E" }}>₱{discount || "0"}</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={S.calcTotal}>
-          <span>TOTAL</span>
-          <span>₱{total}</span>
-        </div>
-
-        {paymentMethod === "cash" && (
+        {!showCheckout ? (
+          /* ── Step 1: Just show total + Proceed button ── */
           <>
-            {/* FIX #1: Shows total by default (grayed). Tap to enter a different amount. */}
-            <div
-              onClick={() => { setNumpadTarget("cash"); setCashFocused(true); }}
-              style={{
-                padding:"8px 10px", marginBottom:6,
-                border:`2px solid ${numpadTarget === "cash" ? "#C0622A" : "#DDD0C0"}`,
-                borderRadius:8, background: numpadTarget === "cash" ? "#FFF8F4" : "#FAF6EF",
-                cursor:"pointer",
-              }}
-            >
-              <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>💵 Cash Tendered</div>
-              <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:22, color: cashFocused ? "#3B1F0E" : "#8A6040" }}>
-                ₱{cashFocused ? (cash || "0") : (total > 0 ? total : "0")}
-                {!cashFocused && total > 0 && (
-                  <span style={{ fontSize:11, fontWeight:400, marginLeft:6, color:"#C0622A" }}>tap to edit</span>
-                )}
+            <div style={S.calcTotal}>
+              <span>TOTAL</span>
+              <span>₱{total}</span>
+            </div>
+            <div style={{ display:"flex", gap:6 }}>
+              <PrimaryBtn onClick={() => { setCart([]); setShowCheckout(false); }} disabled={!cart.length}>CLEAR</PrimaryBtn>
+              <PrimaryBtn onClick={() => setShowCheckout(true)} disabled={!cart.length}>PROCEED →</PrimaryBtn>
+            </div>
+          </>
+        ) : (
+          /* ── Step 2: Full checkout panel with numpad ── */
+          <>
+            {/* Delivery fee + Discount */}
+            <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+              <div style={{ flex:1 }}>
+                <div
+                  onClick={() => setNumpadTarget("delivery")}
+                  style={{
+                    padding:"6px 8px", border:`1px solid ${numpadTarget === "delivery" ? "#C0622A" : "#DDD0C0"}`,
+                    borderRadius:6, background: numpadTarget === "delivery" ? "#FFF8F4" : "#FAF6EF",
+                    cursor:"pointer", fontSize:12, color:"#8A6040",
+                  }}
+                >
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>Delivery</div>
+                  <span style={{ fontSize:14, fontWeight:700, color:"#3B1F0E" }}>₱{deliveryFee || "0"}</span>
+                </div>
+              </div>
+              <div style={{ flex:1 }}>
+                <div
+                  onClick={() => setNumpadTarget("discount")}
+                  style={{
+                    padding:"6px 8px", border:`1px solid ${numpadTarget === "discount" ? "#C0622A" : "#DDD0C0"}`,
+                    borderRadius:6, background: numpadTarget === "discount" ? "#FFF8F4" : "#FAF6EF",
+                    cursor:"pointer", fontSize:12, color:"#8A6040",
+                  }}
+                >
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>Discount</div>
+                  <span style={{ fontSize:14, fontWeight:700, color:"#3B1F0E" }}>₱{discount || "0"}</span>
+                </div>
               </div>
             </div>
 
-            {/* FIX #3: Keyboard input works — digits, dot, Backspace, Escape */}
-            <Numpad
-              value={numpadValue}
-              onChange={handleNumpad}
-              onFocus={() => { if (numpadTarget === "cash") setCashFocused(true); }}
-            />
+            <div style={S.calcTotal}>
+              <span>TOTAL</span>
+              <span>₱{total}</span>
+            </div>
 
-            {/* FIX #1: Change row only appears after cashier manually enters an amount */}
-            {cashFocused && Number(cash) >= total && total > 0 && (
-              <div style={S.changeRow}>
-                <span>Change</span>
-                <span>₱{(Number(cash) - total).toFixed(2)}</span>
-              </div>
+            {paymentMethod === "cash" && (
+              <>
+                <div
+                  onClick={() => { setNumpadTarget("cash"); setCashFocused(true); }}
+                  style={{
+                    padding:"8px 10px", marginBottom:6,
+                    border:`2px solid ${numpadTarget === "cash" ? "#C0622A" : "#DDD0C0"}`,
+                    borderRadius:8, background: numpadTarget === "cash" ? "#FFF8F4" : "#FAF6EF",
+                    cursor:"pointer",
+                  }}
+                >
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", color:"#8A6040", marginBottom:2 }}>💵 Cash Tendered</div>
+                  <div style={{ fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:22, color: cashFocused ? "#3B1F0E" : "#8A6040" }}>
+                    ₱{cashFocused ? (cash || "0") : (total > 0 ? total : "0")}
+                    {!cashFocused && total > 0 && (
+                      <span style={{ fontSize:11, fontWeight:400, marginLeft:6, color:"#C0622A" }}>tap to edit</span>
+                    )}
+                  </div>
+                </div>
+
+                <Numpad
+                  value={numpadValue}
+                  onChange={handleNumpad}
+                  onFocus={() => { if (numpadTarget === "cash") setCashFocused(true); }}
+                />
+
+                {cashFocused && Number(cash) >= total && total > 0 && (
+                  <div style={S.changeRow}>
+                    <span>Change</span>
+                    <span>₱{(Number(cash) - total).toFixed(2)}</span>
+                  </div>
+                )}
+              </>
             )}
+
+            <PaymentSelector value={paymentMethod} onChange={m => {
+              setPaymentMethod(m);
+              setCashFocused(false);
+              setCash("");
+              if (m !== "cash") setNumpadTarget("delivery");
+              else setNumpadTarget("cash");
+            }} />
+
+            <div style={{ display:"flex", gap:6 }}>
+              <PrimaryBtn onClick={() => setShowCheckout(false)}>← BACK</PrimaryBtn>
+              <PrimaryBtn
+                onClick={checkout}
+                disabled={!cart.length || (paymentMethod === "cash" && cashFocused && Number(cash) < total)}
+              >
+                CHECKOUT
+              </PrimaryBtn>
+            </div>
           </>
         )}
-
-        {/* FIX #1: Reset cash state when switching payment methods */}
-        <PaymentSelector value={paymentMethod} onChange={m => {
-          setPaymentMethod(m);
-          setCashFocused(false);
-          setCash("");
-          if (m !== "cash") setNumpadTarget("delivery");
-          else setNumpadTarget("cash");
-        }} />
-
-        <div style={{ display:"flex", gap:6 }}>
-          <PrimaryBtn onClick={() => setCart([])} disabled={!cart.length}>CLEAR</PrimaryBtn>
-          {/* FIX #1: Always enabled for exact-change (cashFocused=false).
-              Only blocks if cashier typed an amount that's too low. */}
-          <PrimaryBtn
-            onClick={checkout}
-            disabled={!cart.length || (paymentMethod === "cash" && cashFocused && Number(cash) < total)}
-          >
-            CHECKOUT
-          </PrimaryBtn>
-        </div>
       </div>
     </>
   );
@@ -748,10 +761,19 @@ function AppContent() {
                         </div>
                       ))}
                     </div>
-                    <button onClick={() => ordersCtx.markComplete(o.id)} style={{
-                      width:"100%", padding:"9px", background:"#3B1F0E", border:"none", borderRadius:7,
-                      color:"#F5ECD7", fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:14, cursor:"pointer",
-                    }}>✓ MARK COMPLETE</button>
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={() => ordersCtx.markComplete(o.id)} style={{
+                        flex:1, padding:"9px", background:"#3B1F0E", border:"none", borderRadius:7,
+                        color:"#F5ECD7", fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:14, cursor:"pointer",
+                      }}>✓ DONE</button>
+                      <button onClick={() => {
+                        if (window.confirm(`Void order ${o.orderNumber}? This will remove it from the dashboard.`))
+                          ordersCtx.voidOrder(o.id);
+                      }} style={{
+                        padding:"9px 12px", background:"transparent", border:"1px solid #C0622A", borderRadius:7,
+                        color:"#C0622A", fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, fontSize:14, cursor:"pointer",
+                      }}>✕ VOID</button>
+                    </div>
                   </div>
                 ))}
               </div>
