@@ -165,8 +165,13 @@ export async function syncWrite({
   const table = getTable(col);
 
   // Always write locally first
-  if (op === "set" || op === "update") {
+  if (op === "set") {
     await (table as Dexie.Table).put({ id: docId, ...payload });
+  } else if (op === "update") {
+    // Use Dexie .update() for partial updates so only the specified fields
+    // are changed. .put() with a partial payload would overwrite the entire
+    // record (e.g. voiding an order would erase its items, total, etc.)
+    await (table as Dexie.Table).update(docId, payload as object);
   } else if (op === "delete") {
     await (table as Dexie.Table).delete(docId);
   }
